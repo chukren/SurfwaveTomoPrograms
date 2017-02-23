@@ -7,7 +7,10 @@ cas.moho.dat
 defaultcrustCascade.dat
 moschetti_etal_Rayleigh_c_8s.dat
 
-notes:
+Notes:  
+
+Input:
+
 36.0 54.0 0.2 -136.0 -118.0 0.2
 beglat,endlat,latinc,beglon,endlon,loninc
 coastfile (modified so the water depth, sediments and age data all available in this region)
@@ -17,6 +20,21 @@ linshearfile
 mohofile
 defaultfile
 rayl8secfile
+
+Output:  
+
+model:
+outputfile
+
+for checking:
+tempoutput
+testbasement.dat
+testmoho.dat
+testregion.dat
+testsedvs.dat
+testslabtopo.dat
+testwater.dat
+
 
 defaultcrust2.dat -> defaultcrustCascade.dat
 Crust_thick2 -> cas.moho.dat
