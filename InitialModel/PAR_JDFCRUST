@@ -1,0 +1,29 @@
+36.0 54.0 0.2 -136.0 -118.0 0.2
+JdF-NA-large.dat
+3DcrustJdF_0.2x0.2
+mantlemodel.dat
+LinShearer.dat
+cas.moho.dat
+defaultcrustCascade.dat
+moschetti_etal_Rayleigh_c_8s.dat
+
+notes:
+36.0 54.0 0.2 -136.0 -118.0 0.2
+beglat,endlat,latinc,beglon,endlon,loninc
+coastfile (modified so the water depth, sediments and age data all available in this region)
+outputfile
+mantlefile
+linshearfile
+mohofile
+defaultfile
+rayl8secfile
+
+defaultcrust2.dat -> defaultcrustCascade.dat
+Crust_thick2 -> cas.moho.dat
+
+files needed for subroutine calls:
+readtopobin()   <--  JdFtopo.bin, JdFtopo.xyz
+read_sed_xyz()  <--  JdFsed.xyz
+readglobalcrustage() <-- global.age.JdF.xy
+read_slab_xyz()	<--  cas_slab1.0_clip.xyz
+read_wUS_xyz()  <--  wUS-SH-2010.xyz
