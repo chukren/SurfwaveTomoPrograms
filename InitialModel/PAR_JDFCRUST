@@ -1,7 +1,7 @@
 36.0 54.0 0.2 -136.0 -118.0 0.2
 JdF-NA-large.dat
 3DcrustJdF_0.2x0.2
-mantlemodel.dat
+mantlemodel_new.dat
 LinShearer.dat
 cas.moho.dat
 defaultcrustCascade.dat
@@ -16,17 +16,16 @@ beglat,endlat,latinc,beglon,endlon,loninc
 coastfile (modified so the water depth, sediments and age data all available in this region)
 outputfile
 mantlefile
-linshearfile
+linshearfile (obsolete input parameter, not used)
 mohofile
 defaultfile
 rayl8secfile
 
 Output:  
-
-model:
+1. model:
 outputfile
 
-for checking:
+2. for checking:
 tempoutput
 testbasement.dat
 testmoho.dat
@@ -36,10 +35,11 @@ testslabtopo.dat
 testwater.dat
 
 
+File dependence
 defaultcrust2.dat -> defaultcrustCascade.dat
 Crust_thick2 -> cas.moho.dat
 
-files needed for subroutine calls:
+Files needed for subroutine calls:
 readtopobin()   <--  JdFtopo.bin, JdFtopo.xyz
 read_sed_xyz()  <--  JdFsed.xyz
 readglobalcrustage() <-- global.age.JdF.xy
