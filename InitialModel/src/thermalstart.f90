@@ -44,6 +44,10 @@
   public :: predotite_wetsolidus_Hirschmann2000
   public :: hydrostatic_pressure
   public :: unrelaxed_shear_modulus
+  public :: unrelaxed_shear_modulus_issak_1992
+  public :: unrelaxed_shear_modulus_PM2003
+  public :: unrelaxed_shear_modulus_FJ2005
+  public :: unrelaxed_shear_modulus_JF2010
   public :: shear_viscosity
   public :: mccarthy_etal_2011
   public :: yamauchi_takei_2016
@@ -107,7 +111,7 @@
       t_sum = 0.0
 
       do i = 1, nl
-        depth_i = depth + thick_hf + (i-1)*thick_inc
+        depth_i = depth + (i-1)*thick_inc
         call tempest(zeroaget,zerocoeff,age,depth_i,tmax,temp)
         call yamauchi_takei_2016(depth_i,temp,seisfreq,vs,Q,Tm,eta,J1,J2,Q_b,Vs_b)
         !call mccarthy_etal_2011(depth_i,temp,vs,Q,temp)
@@ -175,20 +179,13 @@
     end subroutine
 
 
-    subroutine unrelaxed_shear_modulus(temperature, pressure, shear_modulus)
+    subroutine unrelaxed_shear_modulus_issak_1992(temperature, pressure, shear_modulus)
       implicit none
 
-      !=== From Issak, JGR, 1992 in McCarthy et al. (2011)
-      !real, parameter :: Gur   = 82.45E+09      ! unrelaxed modulus (GPa)
-      !real, parameter :: dGudT = -13.6E+06      ! temp derivative GPa/K
-      !real, parameter :: dGudP = 1.8            ! pressure derivative GPa/GPa
-
-      !=== Inverted from Priestley & McKenzie, EPSL, (2013) by Yamauchi & Takei
-      ! JGR (2016)
-      real, parameter :: Gur   = 72.45E+09      ! unrelaxed modulus (Pa)
-      real, parameter :: dGudT = -10.94E+06     ! temp derivative Pa/degK
-      !real, parameter :: dGudP = 1.987          ! pressure derivative Pa/Pa
-      real, parameter :: dGudP = 1.2          ! pressure derivative Pa/Pa
+      !=== From Issak, JGR, 1992 and used in McCarthy et al. (2011)
+      real, parameter :: Gur   = 82.45E+09      ! unrelaxed modulus (Pa)
+      real, parameter :: dGudT = -13.6E+06      ! temp derivative Pa/K  [-1.38E-2, -1.36E-2]GPa/K
+      real, parameter :: dGudP = 1.8            ! pressure derivative Pa/Pa
 
       real :: temperature, pressure
       real :: shear_modulus
@@ -204,6 +201,100 @@
       return
     end subroutine
 
+
+    subroutine unrelaxed_shear_modulus(temperature, pressure, shear_modulus)
+      implicit none
+
+      !=== Inverted from Priestley & McKenzie, EPSL, (2013) by Yamauchi & Takei
+      ! JGR (2016)
+      real, parameter :: Gur   = 72.45E+09      ! unrelaxed modulus (Pa)
+      real, parameter :: dGudT = -10.94E+06     ! temp derivative Pa/degK
+      real, parameter :: dGudP = 1.987          ! pressure derivative Pa/Pa
+      !real, parameter :: dGudP = 1.2           ! pressure derivative Pa/Pa
+
+      real :: temperature, pressure
+      real :: shear_modulus     ! Pa
+
+      if (temperature .lt. 0 .or. temperature .gt. 6000) then
+          write(*,*)"Error: Impossible temperature!"
+          stop
+      endif
+
+      ! calculate unrelaxed modulus at given temperature and pressure
+      shear_modulus = Gur + (temperature + 273.) * dGudT + pressure * dGudP
+
+      return
+    end subroutine
+
+    subroutine unrelaxed_shear_modulus_PM2003(temperature, pressure, shear_modulus)
+      implicit none
+
+      !=== Inverted from Priestley & McKenzie, EPSL, (2013)
+      real, parameter :: Gur   = 72.66E+09      ! unrelaxed modulus (Pa)
+      real, parameter :: dGudT = -8.71E+06     ! temp derivative Pa/degK
+      real, parameter :: dGudP = 2.04          ! pressure derivative Pa/Pa
+
+      real :: temperature, pressure
+      real :: shear_modulus     ! Pa
+
+      if (temperature .lt. 0 .or. temperature .gt. 6000) then
+          write(*,*)"Error: Impossible temperature!"
+          stop
+      endif
+
+      ! calculate unrelaxed modulus at given temperature and pressure
+      shear_modulus = Gur + (temperature + 273.) * dGudT + pressure * dGudP
+
+      return
+    end subroutine
+
+
+    subroutine unrelaxed_shear_modulus_JF2010(temperature, pressure, shear_modulus)
+      implicit none
+
+      !=== Inverted from Jackson & Fual, PEPI, (2010)
+      real, parameter :: Gur   = 66.65E+09      ! unrelaxed modulus (Pa)
+      real, parameter :: dGudT = -13.6E+06     ! temp derivative Pa/degK
+      real, parameter :: dGudP = 1.8          ! pressure derivative Pa/Pa
+
+      real :: temperature, pressure
+      real :: shear_modulus     ! Pa
+
+      if (temperature .lt. 0 .or. temperature .gt. 6000) then
+          write(*,*)"Error: Impossible temperature!"
+          stop
+      endif
+
+      ! calculate unrelaxed modulus at given temperature and pressure
+      shear_modulus = Gur + (temperature + 273. - 1173) * dGudT + (pressure - 0.2E09) * dGudP
+
+      return
+    end subroutine
+
+
+    subroutine unrelaxed_shear_modulus_FJ2005(temperature, pressure, grainsize, shear_modulus)
+        implicit none
+        ! From Faul & Jackson, 2005; Tabel 1
+        ! Ju = Ju(P) + dln(Ju)
+
+        real, parameter :: JuP = 0.0149             ! 1/GPa
+        real, parameter :: dlnJudT = 9.1E-04        ! 1/K
+        real, parameter :: dGudP = 1.8              
+        real, parameter :: grainsize_ref = 1.0E-05  ! meter
+        real, parameter :: grainsize_coef = -0.16   ! 
+        real, parameter :: Tr = 1223                ! k
+
+        real :: temperature, grainsize, Ju, pressure, shear_modulus
+        real :: grainsize_term
+
+        grainsize_term = (grainsize / grainsize_ref)**grainsize_coef
+
+        Ju = JuP * (1.0 + dlnJudT * grainsize_term * (temperature - Tr))
+
+        shear_modulus = 1.0E09 / Ju + dGudP * pressure
+
+        return
+    end subroutine
 
     subroutine shear_viscosity(temperature, pressure, premelt_coeff, viscosity)
       implicit none
@@ -368,15 +459,18 @@
 
       real, parameter :: R= 8.314462            ! gas constant
       real, parameter :: twopi = 2.0*pi 
+
       real, parameter :: Gur   = 82.0E+09       ! unrelaxed modulus (Pa)
       real, parameter :: dGudT = -13.6E+06      ! temp derivative Pa/degK
       real, parameter :: dGudP = 1.8            ! pressure derivative Pa/Pa
+
       real, parameter :: Tr = 1425. + 273.      ! reference temperature
       real, parameter :: Pr = 2.0E+09           ! reference pressure  
       real, parameter :: V  = 12.0E-06          ! activation volume (m^3/mol)
       real, parameter :: E1 = 400.              ! activation energy in kJ/mol  
       real, parameter :: E  = E1*1000.          ! activation energy in J/mol
       real, parameter :: eta0 = 1.0E+21         ! reference viscosity (6.6E19)
+
       real, parameter :: solidus0 = 1100.       ! dry solidus temperature at zero pressure (deg C)
       real, parameter :: solgrad = 3.5          ! gradient of dry solidus (degC/km)  
 
@@ -458,8 +552,7 @@
       real, parameter :: E  = E1*1000.          ! activation energy in J/mol
 
       ! lower down the vel and atten, linear relation
-      !real, parameter :: eta0 = 1.22E+21        ! reference viscosity (6.6E19)
-      real, parameter :: eta0 = 6.22E+21        ! reference viscosity (6.6E19)
+      real, parameter :: eta0 = 6.22E+21        ! reference viscosity
     
       ! dry solidus
       real, parameter :: solidus0 = 1100.       ! dry solidus temperature at zero pressure (deg C)
@@ -475,9 +568,6 @@
       ! change the minimum of atten linearly
       real, parameter :: alpha = 0.38
       
-      !real, parameter :: coeff_b = 139.44    
-      !real, parameter :: coeff_a = -5.904    
-
       real :: a0,a1,a2,a3,a4,a5,a6
       real :: P, z, T, P_gpa
       real :: eta, Gu, dGup, tau_m, G1, taufac, xn, qinv, q, Vs
@@ -490,35 +580,23 @@
       real :: melt_frac
       real :: T_melt, P_melt, eta_melt
 
-      !seisfreq = 0.02 ! Hz, period of seismic waves
-
       ! crudely calculate pressure at given depth - ignore density diff in crust
       P = z * 3.2 * 9.8 * 1.0E+6
       P_gpa = P / 1.0E9 ! GPa
 
-      !if (z <= 80) then
-        !Tm = solidus0 + solgrad * z + 2.5 * (80 - z)
-        !Tm = solidus0 + solgrad * z + 100 + 1.25 * (80 - z)
-      !  Tm = solidus0 + solgrad * z
-      !else
-      !  Tm = solidus0 + solgrad * z
-      !endif
-      !call linear_solidus(z, Tm)
-
-      !Tm = solidus0 + coeff_b * P_gpa + coeff_a * p_gpa**2
       !call predotite_solidus_Hirschmann2000(P_gpa, Tm)
       call predotite_wetsolidus_Hirschmann2000(P_gpa, Tm)
 
       Tn = T / Tm
 
       !=== melt fraction
-      if (Tn < 1.0) then
-        melt_frac = 0.0
-      else
-        melt_frac = (Tn - 1.0) * .3
-      endif
+      !if (Tn < 1.0) then
+      !  melt_frac = 0.0
+      !else
+      !  melt_frac = (Tn - 1.0) * .3
+      !endif
 
-      !melt_frac = 0.0
+      melt_frac = 0.0
 
       !=== debug 
       !write(*,*) z,"melt_frac:", melt_frac
@@ -560,7 +638,16 @@
       call shear_viscosity(T, P, A_eta, eta)
 
       ! calculate unrelaxed shear modulus (mu_u) at temperature and pressure
-      call unrelaxed_shear_modulus(T, P, Gu)
+      ! Temperature: K
+      ! Pressure: GPa
+      ! Gu: Gpa
+      !call unrelaxed_shear_modulus(T, P, Gu)
+      !call unrelaxed_shear_modulus_PM2003(T, P, Gu)
+      call unrelaxed_shear_modulus_JF2010(T, P, Gu)
+      !call unrelaxed_shear_modulus_issak_1992(T, P, Gu)
+ 
+      ! grainsize set to 0.005 m
+      !call unrelaxed_shear_modulus_FJ2005(T, P, 0.005, Gu)
 
       ! calculate characteristic Maxwell relaxation time
       tau_m = eta / Gu
