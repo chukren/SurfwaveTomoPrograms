@@ -111,7 +111,7 @@
       t_sum = 0.0
 
       do i = 1, nl
-        depth_i = depth + (i-1)*thick_inc
+        depth_i = depth + (i-1)*thick_inc + thick_hf
         call tempest(zeroaget,zerocoeff,age,depth_i,tmax,temp)
         call yamauchi_takei_2016(depth_i,temp,seisfreq,vs,Q,Tm,eta,J1,J2,Q_b,Vs_b)
         !call mccarthy_etal_2011(depth_i,temp,vs,Q,temp)
@@ -168,7 +168,7 @@
     subroutine predotite_wetsolidus_Hirschmann2000(pressure, temperature)
       implicit none
       real, parameter :: coeff_a = -5.14   ! C/GPa^2
-      real, parameter :: coeff_b = 111.9   ! C/GPa
+      real, parameter :: coeff_b = 101.9   ! C/GPa
       real, parameter :: coeff_c = 1120.7  ! C
 
       real :: pressure, temperature
@@ -209,8 +209,8 @@
       ! JGR (2016)
       real, parameter :: Gur   = 72.45E+09      ! unrelaxed modulus (Pa)
       real, parameter :: dGudT = -10.94E+06     ! temp derivative Pa/degK
-      real, parameter :: dGudP = 1.987          ! pressure derivative Pa/Pa
-      !real, parameter :: dGudP = 1.2           ! pressure derivative Pa/Pa
+      !real, parameter :: dGudP = 1.987          ! pressure derivative Pa/Pa
+      real, parameter :: dGudP = 1.5           ! pressure derivative Pa/Pa
 
       real :: temperature, pressure
       real :: shear_modulus     ! Pa
@@ -604,13 +604,13 @@
 
       !=== amplitude of peak: amp_p ===
       if (Tn < 0.91) then
-        amp_p = 0.01 
+          amp_p = 0.01 
       else if (Tn < 0.96 .and. Tn >= 0.91) then
-        amp_p = 0.01 + 0.4 * (Tn - 0.91)
+          amp_p = 0.01 + 0.4 * (Tn - 0.91)
       else if (Tn < 1.0 .and. Tn >= 0.96) then
-        amp_p = 0.03
+          amp_p = 0.03
       else ! Tn > 1.0
-        amp_p = 0.03 
+          amp_p = 0.03 
       endif
 
       !=== width of peak: sigma_p ===
@@ -641,9 +641,9 @@
       ! Temperature: K
       ! Pressure: GPa
       ! Gu: Gpa
-      !call unrelaxed_shear_modulus(T, P, Gu)
+      call unrelaxed_shear_modulus(T, P, Gu)
       !call unrelaxed_shear_modulus_PM2003(T, P, Gu)
-      call unrelaxed_shear_modulus_JF2010(T, P, Gu)
+      !call unrelaxed_shear_modulus_JF2010(T, P, Gu)
       !call unrelaxed_shear_modulus_issak_1992(T, P, Gu)
  
       ! grainsize set to 0.005 m
