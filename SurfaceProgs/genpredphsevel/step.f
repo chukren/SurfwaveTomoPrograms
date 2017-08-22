@@ -1,0 +1,65 @@
+      SUBROUTINE  STEP
+      REAL*8  RAD,TMASS,GS,RHO0,GA
+      REAL*8  D,H,RHO,ELAMB,EMU,GR,XI,PHI,ETA
+      COMMON/MODEL /NLAY,ISO,LAME,NDIV,DMAX,ILAY,
+     1              RAD,TMASS,GS,RHO0,GA,
+     2              HI(500),RHOI(500),VPI(500),VSI(500),NAME(20),
+     3              XII(500),PHII(500),ETAI(500),
+     4              D(1000),H(1000),RHO(1000),ELAMB(1000),EMU(1000),
+     5              GR(1000),XI(1000),PHI(1000),ETA(1000)
+      REAL*8  RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,U,ENGY,DELTA
+      REAL*8  A,F,Y
+      COMMON/VALUE /MODE,IERROR,I,ISTEP,J,K,L,N,NSOL,ISUM,KMAX,
+     1              NMAX,IBOTM,ITOP,LY,LD,ACR,ELLIP,
+     2              RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,
+     3              U,ENGY,DELTA,
+     4              A(6,6),F(20),Y(6)
+      REAL*8  Y1,Y2,Y3
+      COMMON/Y123  /Y1(6,3),Y2(6,3),Y3(6,3)
+      REAL*8  SAVE
+C
+C PURPOSE - TO INTEGRATE 2-STEPS BY A RUNGE-KUTTA METHOD
+C INITIAL VALUE  Y1(RC,I)
+C 1-ST STEP      Y2(RC+HC,I-2)
+C S-ND STEP      Y3(RC+2*HC,I-4)
+C IF(J.NE.0)  RC AND HC ARE COMPUTED FROM D(I)
+C
+C SUBROUTINE REQUIRED - RUNGE
+C
+      SAVE=RC
+      III=I
+      ALP=0.5D+0
+C
+C 1-ST STEP
+C
+      IF(J)  100,200,100
+  100 CONTINUE
+      RC=RAD-D(I)
+      H1=H(I)
+      H2=H(I-1)
+      HC=H1+H2
+      ALP=H1/HC
+  200 CONTINUE
+      CALL  RUNGE(Y1,Y2)
+C
+C 2-ND STEP
+C
+      RC=RC+HC
+      I=I-2
+      IF(J)  300,400,300
+  300 CONTINUE
+      RC=RAD-D(I)
+      H1=H(I)
+      H2=H(I-1)
+      HC=H1+H2
+      ALP=H1/HC
+  400 CONTINUE
+      CALL  RUNGE(Y2,Y3)
+C
+C EXIT
+C
+ 1000 CONTINUE
+      RC=SAVE
+      I=III
+      RETURN
+      END

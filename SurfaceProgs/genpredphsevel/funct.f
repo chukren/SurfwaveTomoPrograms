@@ -1,0 +1,19 @@
+      SUBROUTINE  FUNCT(YC,XC,P,IER)
+      REAL*8  RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,U,ENGY,DELTA
+      REAL*8  A,F,Y
+      COMMON/VALUE /MODE,IERROR,I,ISTEP,J,K,L,N,NSOL,ISUM,KMAX,
+     1              NMAX,IBOTM,ITOP,LY,LD,ACR,ELLIP,
+     2              RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,
+     3              U,ENGY,DELTA,
+     4              A(6,6),F(20),Y(6)
+      REAL*8  XC,YC
+C
+C A DUMMY SUBPROGRAM
+C
+      CALL  WNFRQ(P,XC)
+      J=-1
+      CALL  INTEG
+      IER=IERROR
+      YC=DELTA
+      RETURN
+      END

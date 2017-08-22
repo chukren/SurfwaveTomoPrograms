@@ -1,0 +1,32 @@
+      SUBROUTINE  EIGFUN(YY)
+      REAL*8  RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,U,ENGY,DELTA
+      REAL*8  A,F,Y
+      COMMON/VALUE /MODE,IERROR,I,ISTEP,J,K,L,N,NSOL,ISUM,KMAX,
+     1              NMAX,IBOTM,ITOP,LY,LD,ACR,ELLIP,
+     2              RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,
+     3              U,ENGY,DELTA,
+     4              A(6,6),F(20),Y(6)
+      REAL*8  YN,YB,SUM,Q
+      COMMON/SOL   /YN(6,1000),YB(6,3,20),SUM(20),Q(3,21),
+     1              WNB(100),TT(100),CC(100),UU(100),ENG(100),ELL(100),
+     2              AC(100)
+      REAL*8  WS,YY
+      DIMENSION  YY(6,3)
+C
+C COMBINE NSOL INDEPENDENT SOLUTIONS
+C
+      DO  10  LL=1,6
+      YN(LL,N)=0.0
+   10 CONTINUE
+C
+C
+      DO  200  LL=1,L
+      WS=0.0
+      DO  100  NS=1,NSOL
+      WS=WS+YY(LL,NS)
+  100 CONTINUE
+      YN(LL,N)=WS
+  200 CONTINUE
+C
+      RETURN
+      END

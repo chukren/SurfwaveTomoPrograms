@@ -1,0 +1,280 @@
+      SUBROUTINE INIVAL
+      REAL*8 RAD,TMASS,GS,RHO0,GA
+      REAL*8 D,H,RHO,ELAMB,EMU,GR,XI,PHI,ETA
+      COMMON/MODEL /NLAY,ISO,LAME,NDIV,DMAX,ILAY,
+     1              RAD,TMASS,GS,RHO0,GA,
+     2              HI(500),RHOI(500),VPI(500),VSI(500),NAME(20),
+     3              XII(500),PHII(500),ETAI(500),
+     4              D(1000),H(1000),RHO(1000),ELAMB(1000),EMU(1000),
+     5              GR(1000),XI(1000),PHI(1000),ETA(1000)
+      REAL*8  RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,U,ENGY,DELTA
+      REAL*8  A,F,Y
+      COMMON/VALUE /MODE,IERROR,I,ISTEP,J,K,L,N,NSOL,ISUM,KMAX,
+     1              NMAX,IBOTM,ITOP,LY,LD,ACR,ELLIP,
+     2              RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,
+     3              U,ENGY,DELTA,
+     4              A(6,6),F(20),Y(6)
+      REAL*8  YN,YB,SUM,Q
+      COMMON/SOL/  YN(6,1000),YB(6,3,20),SUM(20),Q(3,21),
+     1             WNB(100),TT(100),CC(100),UU(100),ENG(100),ELL(100),
+     2             AC(100)
+      REAL*8  RH,EL,EM,P,S,RB,RT,XA,XB,XBB,ZA,ZB,WN1,RVP
+      REAL*8  ER,WS
+      REAL*8  ZN
+C
+C INITIAL VALUES
+C MANTLE WAVE
+C Y3+WNN*Y4=0
+C SUBROUTINE REQUIRED - ZN
+C
+      RH=RHO(I)
+      EL=ELAMB(I)
+      EM=EMU(I)
+      RVP   =EL+2.0D+0*EM
+      P=RVP/RH
+      S=EM/RH
+      RB=RAD-D(IBOTM)
+      RT=RAD-D(ITOP)
+      IF(J-1)  30,20,10
+   10 CONTINUE
+      DO  11  IS=1,ISUM
+      SUM(IS)=0.0
+   11 CONTINUE
+      GO TO  30
+   20 CONTINUE
+      DO  21  KK=1,KMAX
+      DO  21  LL=1,6
+      YB(LL,3,KK)=YB(LL,1,KK)
+   21 CONTINUE
+C
+   30 CONTINUE
+C
+      GO TO  (900,900,300,400,300,900),MODE
+C
+C MANTLE LOVE WAVE (SPHERICAL MODEL)
+C
+  300 CONTINUE
+      NSOL=1
+      L=2
+      ISUM=3
+      IF(J)  310,350,350
+C
+  310 CONTINUE
+      IF(EM.EQ.0.0)  GO TO  120
+C
+C SOLID LAYER
+C
+      YB(1,1,1)=RB
+      XB=(FRQ*RB)/DSQRT(S)
+      YB(2,1,1)=EM*((WN-1.0D+0)-ZN(XB,WN,20))
+      GO TO  1000
+C
+C LIQUID LAYER
+C FIND A SOLID LAYER
+C
+  120 CONTINUE
+      IF(I.LT.2)  GO TO  995
+      DO  122  II=2,I
+      III=I-II+2
+      IF(EMU(III-1).NE.0.0)  GO TO  123
+  122 CONTINUE
+      GO TO  995
+  123 CONTINUE
+      IF(H(III).NE.0.0)  GO TO  995
+      I=III
+C
+      YB(1,1,1)=1.0D+0
+      YB(2,1,1)=0.0
+      GO TO  1000
+C
+C
+  350 CONTINUE
+      Q(1,KMAX-1)=RT/YB(1,1,KMAX)
+      IF(KMAX.LE.2)  GO TO  152
+      K1=KMAX-2
+      DO  151  KK=1,K1
+      KKK=KMAX-KK-1
+      Q(1,KKK)=Q(1,KKK+1)
+  151 CONTINUE
+  152 CONTINUE
+      ELLIP=0.0
+      GO TO  290
+C
+C MANTLE RAYLEIGH WAVE (SPHERICAL MODEL)
+C
+  400 CONTINUE
+      
+      IF(J-1)  410,430,460
+  410 CONTINUE
+C
+      IF(EM.EQ.0.0)  GO TO  420
+C
+C SOLID LAYER
+C
+      NSOL=1
+      ISUM=3
+      L=5
+      XA=(FRQ*RB)/DSQRT(P)
+      XBB=(FRQ2*RB*RB)/S
+      XB=DSQRT(XBB)
+      ZA=ZN(XA,WN,20)
+      ZB=ZN(XB,WN,20)
+      WN1=WN+1.0D+0
+      ER=EM/RB
+C
+      YB(1,1,1)=0.5D+0*(WN1*ZA+WN*ZB-ZA*ZB)/WN1
+      YB(2,1,1)=ER*ER*(XBB*(-0.5D+0*XBB+(WN-1.0D+0)*(2.0D+0*WN+1.0D+0))
+     1         +2.0D+0*(-WN1*(WN2-2.0D+0)+XBB)*ZA
+     2         +(-2.0D+0*WN*(WN2-2.0D+0)+XBB)*ZB
+     3         +2.0D+0*(WN2-2.0D+0)*ZA*ZB)/WN1
+      YB(3,1,1)=ER*WN*(-0.5D+0*XBB+WN1*ZA+WN*ZB-ZA*ZB)
+      YB(4,1,1)=ER*(0.5D+0*WN*XBB-(0.5D+0*XBB+WN1)*ZA-WN*ZB+ZA*ZB)/WN1
+      YB(5,1,1)=2.0D+0*ER*(WN1*(-0.25D+0*XBB+ZA)
+     1         +(WN+0.25D+0*XBB)*ZB-ZA*ZB)/WN1
+      GO TO  1000
+C
+C LIQUID LAYER
+C
+  420 CONTINUE
+     
+      NSOL=1
+      L=2
+      ISUM=3
+      XA=(FRQ*RB)/DSQRT(P)
+      YB(1,1,1)=WN-ZN(XA,WN,20)
+      YB(2,1,1)=-FRQ2*RH*RB
+      GO TO  1000
+C
+  430 CONTINUE
+      IF(EM.EQ.0.0)  GO TO  420
+C
+C SOLID LAYER
+C
+      NSOL=2
+      L=4
+      ISUM=3
+      XA=(FRQ*RB)/DSQRT(P)
+      XBB=(FRQ2*RB*RB)/S
+      XB=DSQRT(XBB)
+      ZA=ZN(XA,WN,20)
+      ZB=ZN(XB,WN,20)
+      WN1=WN+1.0D+0
+      YB(1,1,1)=WN-0.5D+0*ZA
+      YB(2,1,1)=(EM/RB)*(2.0D+0*WN*(WN-1.0D+0)-0.5D+0*XBB+2.0D+0*ZA
+     1         -WN*ZB)
+      YB(3,1,1)=1.0D+0-(0.5D+0*ZB)/WN1
+      YB(4,1,1)=(EM/RB)*(2.0D+0*(WN-1.0D+0)-(0.5D+0*XBB)/WN1
+     1         -ZA+ZB/WN1)
+      YB(1,2,1)=-0.5D+0*ZA
+      YB(2,2,1)=(EM/RB)*(-0.5D+0*XBB+2.0D+0*ZA+WN*ZB)
+      YB(3,2,1)=(0.5D+0*ZB)/WN1
+      YB(4,2,1)=(EM/RB)*((0.5D+0*XBB)/WN1-ZA-ZB/WN1)
+      GO TO  1000
+C
+  460 CONTINUE
+      IF(EMU(ITOP))  461,465,461
+C
+C SOLID SURFACE LAYER
+C
+  461 CONTINUE
+      NSOL=2
+      WS=YB(3,3,KMAX)**2+WN2*(YB(4,3,KMAX)**2)
+      Q(1,KMAX-1)= RT*(YB(2,2,KMAX)*YB(3,3,KMAX)
+     1           +WN2*YB(4,2,KMAX)*YB(4,3,KMAX))/WS
+      Q(2,KMAX-1)=-RT*(YB(2,1,KMAX)*YB(3,3,KMAX)
+     1           +WN2*YB(4,1,KMAX)*YB(4,3,KMAX))/WS
+      ELLIP=YB(3,3,KMAX)*(YB(5,3,KMAX)-YB(4,3,KMAX))/WS
+      GO TO  270
+C
+C LIQUID SURFACE LAYER
+C
+  465 CONTINUE
+      NSOL=1
+      Q(1,KMAX-1)=RT/YB(1,3,KMAX)
+      ELLIP=-YB(3,3,KMAX-1)/(WN2*YB(4,3,KMAX-1))
+C
+  270 CONTINUE
+      IF(KMAX.LE.2)  GO TO  279
+      K1=KMAX-2
+      DO  271  KK=1,K1
+      KKK=KMAX-KK-1
+      IF(NSOL-2)  272,273,273
+  272 CONTINUE
+      NSOL=2
+      Q(1,KKK)= YB(4,2,KKK+1)*Q(1,KKK+1)
+      Q(2,KKK)=-YB(4,1,KKK+1)*Q(1,KKK+1)
+      GO TO  271
+  273 CONTINUE
+      NSOL=1
+      Q(1,KKK)=Q(1,KKK+1)
+  271 CONTINUE
+C
+  279 CONTINUE
+      L=2*NSOL
+C
+C
+  290 CONTINUE
+      DO  275  NS=1,NSOL
+      DO  275  LL=1,L
+      YB(LL,NS,1)=Q(NS,1)*YB(LL,NS,1)
+  275 CONTINUE
+      GO TO  1000
+C
+C ERROR
+C
+  900 CONTINUE
+c      WRITE(6,901)  MODE
+  901 FORMAT(1H0,5HMODE=I2,3X,19HINIVAL(MANTLE WAVE)//)
+      IERROR=3
+      GO TO  1000
+  995 CONTINUE
+c      WRITE(6,996)  NAME
+  996 FORMAT(1H0,5HMODEL,2X,20A4//)
+      IF(IERROR.LE.1)  IERROR=2
+      GO TO  1000
+C
+C EXIT
+C
+ 1000 CONTINUE
+      RETURN
+      END
+C----------------------------------
+C*    REAL  FUNCTION  ZN*8(X,FN,M)
+      REAL*8 FUNCTION ZN(X,FN,M)
+      REAL*8  X,XX,FN,FM,C,CC,Z
+      LOGICAL  FIRST
+C
+C PURPOSE - TO COMPUTE  X*J   (X)/J (X)
+C                          N+1     N
+C
+      FIRST=.TRUE.
+      M1=M
+    1 CONTINUE
+      FM=M1
+      XX=X*X
+      C     =2.0D+0*(FN+FM)+1.0D+0
+      CC    =C+2.0D+0*FM
+      Z=0.0
+      ZN=0.0
+C
+      DO  100  MM=1,M1
+      Z=XX/(C-Z)
+      ZN    =XX/(CC-2.0D+0-(XX/(CC-ZN)))
+      C=C-2.0D+0
+      CC=CC-4.0D+0
+  100 CONTINUE
+C
+      E=(ZN-Z)/ZN
+      IF(ABS(E).LE.1.0E-05)  GO TO  1000
+      IF(.NOT.FIRST)  GO TO  900
+      FIRST=.FALSE.
+      M1=2*M
+      GO TO  1
+  900 CONTINUE
+c      WRITE(6,999)  ZN,Z,X,FN,M1
+  999 FORMAT(1H ,30X,13HWARNING IN ZN,3X,3HZN=D13.5,
+     1       3X,2HZ=D13.5,3X,2HX=D13.5,3X,2HN=D13.5,3X,2HM=I3)
+C
+ 1000 CONTINUE
+      RETURN
+      END
