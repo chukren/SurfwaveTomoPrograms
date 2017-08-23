@@ -1,0 +1,11 @@
+#!/bin/csh
+./rdsetupsimul.1.brfix < Master_EQLists/PolyDec_List017.txt
+./rdsetupsimul.1.brfix < Master_EQLists/PolyDec_List018.txt
+./rdsetupsimul.1.brfix < Master_EQLists/PolyDec_List020.txt
+./rdsetupsimul.1.brfix < Master_EQLists/PolyDec_List022.txt
+./rdsetupsimul.1.brfix < Master_EQLists/PolyDec_List025.txt
+./rdsetupsimul.1.brfix < Master_EQLists/PolyDec_List029.txt
+./rdsetupsimul.1.brfix < Master_EQLists/PolyDec_List033.txt
+./rdsetupsimul.1.brfix < Master_EQLists/PolyDec_List040.txt
+./rdsetupsimul.1.brfix < Master_EQLists/PolyDec_List045.txt
+

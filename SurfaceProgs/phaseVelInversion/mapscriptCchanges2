@@ -1,0 +1,65 @@
+#!/bin/csh
+#Plot 2-D velocity and standard error by GMT from files anomaly.*.grd1 and stdde.*.grd1
+ 
+#   cp ../../phase-coeff-*s.dat .
+#    cp ../../nodecoeff* .  
+#   set bds=-120/-106/22/35
+   set bds=-126/-108/29/41
+#--------------------------velocity coefficients --------------------------
+makecpt -Crainbow -I -T3.7/4.0/.1 -Z >! anomaly2.cpt
+#makecpt -Crainbow -I -T3.5/3.9/.1 -Z >! anomaly2.cpt
+# makecpt -Crainbow -I -T-0.5/0.5/.1 -Z >! anomaly.cpt 
+
+#***************************************
+#foreach file (`ls phase-coeff-*s.dat`)
+#set fn1=`echo $file | sed 's/.dat//' `
+#xyz2grd -R$bds -I.5 $fn1.dat -G$fn1.grd2
+#psbasemap -R$bds -JM5.5i -Ba2f2  -Y1.15 -K -P >! $fn1.ps
+#grdimage $fn1.grd2 -R$bds -Canomaly.cpt -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+#grdcontour $fn1.grd2 -C.5 -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+#pscoast -R$bds -Dl -A250 -JM5.5i  -W1p -Na -K -O -P >> $fn1.ps
+#psscale -D2.5i/7i/5.5i/.25ih -B0.2 -Canomaly.cpt -O -P >> $fn1.ps
+#end
+#rm *grd2 *~ anomaly.cpt 
+
+
+#--------------------------velocity 0.2x0.2--------------------------
+
+#./gridgen < phase-coeff-22s.dat > phasevel22s.dat
+#./gridgen < phase-coeff-25s.dat > phasevel25s.dat
+#./gridgen < phase-coeff-29s.dat > phasevel29s.dat
+#./gridgen < phase-coeff-33s.dat > phasevel33s.dat
+#./gridgen < phase-coeff-40s.dat > phasevel40s.dat
+#./gridgen < phase-coeff-46s.dat > phasevel46s.dat
+#./gridgen < phase-coeff-50s.dat > phasevel50s.dat
+#./gridgen < phase-coeff-59s.dat > phasevel59s.dat
+#./gridgen < phase-coeff-67s.dat > phasevel67s.dat
+#./gridgen < phase-coeff-77s.dat > phasevel77s.dat
+#./gridgen < phase-coeff-91s.dat > phasevel91s.dat
+#./gridgen < phase-coeff-100s.dat > phasevel100s.dat
+#./gridgen < phase-coeff-111s.dat > phasevel111s.dat
+#./gridgen < phase-coeff-125s.dat > phasevel125s.dat
+#./gridgen < phase-coeff-143s.dat > phasevel143s.dat
+
+#./gridgen < nodecoeff10.80.16 > phasevel16s.dat
+
+#makecpt -Crainbow -I -T3.3/4.3/.1 >! anomaly.cpt
+  
+
+#***************************************
+#foreach file (`ls phasevel*s.dat`)
+#foreach file (`ls vel_change*s.grd`)
+#set fn1=`echo $file | sed 's/.grd//' `
+set fn1 = 'gridphse.020.584.40.25.map'
+xyz2grd -R$bds -I.25 $fn1 -G$fn1.grd2
+#xyz2grd -R$bds -I.25 $fn1.grd -G$fn1.grd2
+psbasemap -R$bds -JM5.5i -Ba2f2  -Y1.15 -K -P >! $fn1.ps
+grdimage $fn1.grd2 -R$bds -Canomaly2.cpt -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+grdcontour $fn1.grd2 -C.1 -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+pscoast -R$bds -Dl -A250 -JM5.5i  -W1p -Na -K -O -P >> $fn1.ps
+psxy SampleLoc.dat -R$bds -JM5.5i -Sc0.1c -G0/0/0 -N -: -O -K -P >> $fn1.ps
+psscale -D2.5i/7i/5.5i/.25ih -B0.2 -Canomaly2.cpt -O -P >> $fn1.ps
+#end
+
+
+#rm *grd2 *~ anomaly1.cpt 

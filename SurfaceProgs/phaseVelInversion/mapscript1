@@ -1,0 +1,128 @@
+#!/bin/csh
+
+# Plot 2-D velocity and 2X standard error by GMT 
+
+# Set up region boundaries
+#   set bds=-124/-116/32/40
+ set bds=-126/-108/29/41
+#---------------------Plot velocities--------------------------
+
+#makecpt -Crainbow -I -T3.6/4.2/.02 >! anomaly.cpt
+makecpt -Crainbow -I -Z -T3.4/4.1/.02 >! anomaly.cpt
+foreach file (`ls velgrid.*.134.80.25 `)
+set fn1=`echo $file `
+#*******************************************
+set fre='.'`echo $file | awk -F. '{print $2}' `
+if ($fre == '.007') then
+  set T='143s'
+else if ($fre == '.008') then
+  set T='125s'
+else if ($fre == '.009') then
+  set T='111s'
+else if ($fre == '.010') then
+  set T='100s'
+else if ($fre == '.011') then
+  set T='91s'  
+else if ($fre == '.013') then
+  set T='77s'
+else if ($fre == '.015') then
+  set T='67s'
+else if ($fre == '.017') then
+  set T='59s'
+else if ($fre == '.020') then
+  set T='50s' 
+else if ($fre == '.022') then
+  set T='46s'
+else if ($fre == '.025') then
+  set T='40s'
+else if ($fre == '.030') then
+  set T='33s'
+else if ($fre == '.035') then
+  set T='29s' 
+else if ($fre == '.040') then
+  set T='25s'
+else if ($fre == '.045') then
+  set T='22s'
+else if ($fre == '.050') then
+  set T='20s'
+else if ($fre == '.055') then
+  set T='18s'
+else if ($fre == '.060') then
+  set T='16.7s'
+endif
+#***************************************
+
+#xyz2grd -R$bds -I.2 $fn1 -G$fn1.grd2
+surface -R$bds -I.1 $fn1 -G$fn1.grd2 -T0.5
+psbasemap -R$bds -JM5.5i -Ba2f2  -Y4.15 -K -P >! $fn1.ps
+#psclip clippolySC -R$bds -JM5.5i -K -O -P >> $fn1.ps
+grdimage $fn1.grd2 -R$bds -Canomaly.cpt -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+grdcontour $fn1.grd2 -C0.05 -JM5.5i -Ba2f2 -W0.5p -K -O -P >> $fn1.ps
+#psclip -C -O -K >> $fn1.ps
+pscoast -R$bds -Di -A250 -JM5.5i  -W1p -Na -K -O -P >> $fn1.ps
+#psxy staloclistSC.dat -R$bds -JM5.5i -Sc0.2c -G0/0/0 -N -: -O -K -P >> $fn1.ps
+#psxy califedge -R$bds -JM5.5i -K -W1p -O -P >> $fn1.ps
+#psxy monterrey -R$bds -JM5.5i -K -M -L -W1p -Gp0/17:B- -O -P >> $fn1.ps
+psscale -D2.75i/-0.5i/5.5i/.25ih -B0.1:"$T phase velocity (km/s)":/:: -Canomaly.cpt -O -P >> $fn1.ps
+end
+
+#-------------------------Plot 2X standard error--------------------
+
+makecpt -Crainbow -Z -T0/0.08/.01 >! error.cpt
+foreach file (`ls stdgrid.*.134.80.25 `)
+set fn1=`echo $file `
+#*******************************************
+set fre='.'`echo $file | awk -F. '{print $2}' `
+if ($fre == '.007') then
+  set T='143s'
+else if ($fre == '.008') then
+  set T='125s'
+else if ($fre == '.009') then
+  set T='111s'
+else if ($fre == '.010') then
+  set T='100s'
+else if ($fre == '.011') then
+  set T='91s'  
+else if ($fre == '.013') then
+  set T='77s'
+else if ($fre == '.015') then
+  set T='67s'
+else if ($fre == '.017') then
+  set T='59s'
+else if ($fre == '.020') then
+  set T='50s' 
+else if ($fre == '.022') then
+  set T='46s'
+else if ($fre == '.025') then
+  set T='40s'
+else if ($fre == '.030') then
+  set T='33s'
+else if ($fre == '.035') then
+  set T='29s' 
+else if ($fre == '.040') then
+  set T='25s'
+else if ($fre == '.045') then
+  set T='22s'
+else if ($fre == '.050') then
+  set T='20s'
+else if ($fre == '.055') then
+  set T='18s'
+else if ($fre == '.060') then
+  set T='16.7s'
+endif
+#***************************************
+
+#xyz2grd -R$bds -I.2 $fn1 -G$fn1.grd2
+surface -R$bds -I.1 $fn1 -G$fn1.grd2 -T0.5
+psbasemap -R$bds -JM5.5i -Ba2f2  -Y1.15 -K -P >! $fn1.ps
+#psclip clippolySC -R$bds -JM5.5i -K -O -P >> $fn1.ps
+grdimage $fn1.grd2 -R$bds -Cerror.cpt -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+grdcontour $fn1.grd2 -C0.01 -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+#psclip -C -O -K >> $fn1.ps
+pscoast -R$bds -Di -A250 -JM5.5i  -W1p -Na -K -O -P >> $fn1.ps
+#psxy staloclistSC.dat -R$bds -JM5.5i -Sc0.2c -G0/0/0 -N -: -O -K -P >> $fn1.ps
+#psxy califedge -R$bds -JM5.5i -K -W1p -O -P >> $fn1.ps
+#psxy monterrey -R$bds -JM5.5i -K -M -L -W1p -Gp0/17:B- -O -P >> $fn1.ps
+psscale -D2.5i/9i/5.5i/.25ih -B0.02:"$T 2x standard deviation":/:: -Cerror.cpt -O -P >> $fn1.ps
+end
+

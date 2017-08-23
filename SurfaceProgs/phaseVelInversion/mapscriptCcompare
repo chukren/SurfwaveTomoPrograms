@@ -1,0 +1,34 @@
+#!/bin/csh
+#Plot 2-D velocity and standard error by GMT from files anomaly.*.grd1 and stdde.*.grd1
+ 
+#   cp ../../phase-coeff-*s.dat .
+#    cp ../../nodecoeff* .  
+#   set bds=-120/-106/22/35
+   set bds=-126/-108/29/41
+#--------------------------velocity coefficients --------------------------
+#makecpt -Crainbow -I -T3.1/4.0/.1 -Z >! anomaly.cpt
+makecpt -Cred2green -I -Z -T0/.05/.01 >! phsedif.cpt
+
+#***************************************
+set fn1 = 'absphsedif.020.787.40.25.RegionsvsBL.map'
+xyz2grd -R$bds -I.25 $fn1 -G$fn1.grd2
+#xyz2grd -R$bds -I.25 $fn1.grd -G$fn1.grd2
+psbasemap -R$bds -JM5.5i -Ba2f2  -Y1.15 -K -P >! $fn1.ps
+pstext -R$bds -JM5.5i -O -K -P -N <<EOI >> $fn1.ps
+-120.5 45.3.0 14 0 0.5 5 Phse Vel Dif/ Stddev
+EOI
+grdimage $fn1.grd2 -R$bds -Cphsedif.cpt -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+#grdcontour $fn1.grd2 -C.1 -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+pscoast -R$bds -Dl -A250 -JM5.5i  -W1p -Na -K -O -P >> $fn1.ps
+psxy BRrgnlBndryPts2.gmt -R$bds -JM5.5i -N -M -W4/0to -O -K -P >> $fn1.ps
+#psxy staloclist.dat -R$bds -JM5.5i -Sc0.2c -G0/0/0 -N  -O -K -P >> $fn1.ps
+#  next two plot aniso vectors
+#psxy 787.40.25.RegionsBL.anisopt.020	 -R$bds -JM5.5i -W -SV0.03/0/0 -O -K -P >> $fn1.ps
+#psxy 787.40.25.RegionsBL.anisopt.020c -R$bds -JM5.5i -W -Sc -O -K -P >> $fn1.ps
+
+psscale -D2.5i/7i/5.5i/.25ih -B0.2 -Cphsedif.cpt -O -P >> $fn1.ps
+#end
+
+
+#rm *grd2 *~ anomaly1.cpt 
+ 

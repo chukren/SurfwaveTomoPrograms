@@ -1,0 +1,115 @@
+#!/bin/csh
+
+# Plot 2-D velocity and 2X standard error by GMT 
+
+# Set up region boundaries
+   set bds=-122/-106/22/36
+
+#---------------------Plot velocities--------------------------
+
+makecpt -Crainbow -I -T-5/5/.5 >! anomaly.cpt
+foreach file (`ls  anomaly.*.80.dvstb.sak34.grd `)
+set fn1=`echo $file | sed 's/.grd//' `
+#*******************************************
+set fre='.'`echo $file | awk -F. '{print $2}' `
+if ($fre == '.007') then
+  set T='143s'
+else if ($fre == '.008') then
+  set T='125s'
+else if ($fre == '.009') then
+  set T='111s'
+else if ($fre == '.01') then
+  set T='100s'
+else if ($fre == '.011') then
+  set T='91s'  
+else if ($fre == '.013') then
+  set T='77s'
+else if ($fre == '.015') then
+  set T='67s'
+else if ($fre == '.017') then
+  set T='59s'
+else if ($fre == '.02') then
+  set T='50s' 
+else if ($fre == '.022') then
+  set T='46s'
+else if ($fre == '.025') then
+  set T='40s'
+else if ($fre == '.03') then
+  set T='33s'
+else if ($fre == '.035') then
+  set T='29s' 
+else if ($fre == '.04') then
+  set T='25s'
+else if ($fre == '.045') then
+  set T='22s'
+else 
+  set T='20s'
+endif
+#***************************************
+
+xyz2grd -R$bds -I.2 $fn1.grd -G$fn1.grd2
+psbasemap -R$bds -JM5.5i -Ba2f2  -Y1.15 -K -P >! $fn1.ps
+psclip clippoly2 -R$bds -JM5.5i -K -O >> $fn1.ps
+grdimage $fn1.grd2 -R$bds -Canomaly.cpt -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+grdcontour $fn1.grd2 -C.5 -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+psclip -C -O -K >> $fn1.ps
+pscoast -R$bds -Dl -A250 -JM5.5i  -W1p -Na -K -O -P >> $fn1.ps
+psxy stations.txt -R$bds -JM5.5i -Sc0.2c -G255/0/0 -N -: -O -K -P >> $fn1.ps
+psscale -D2.5i/7i/5.5i/.25ih -B1:"$T phase velocity anomaly(%)":/:: -Canomaly.cpt -O -P >> $fn1.ps
+end
+
+#-------------------------Plot 2X standard error--------------------
+
+makecpt -Crainbow -T0/0.08/.01 >! error.cpt
+
+foreach file (`ls  stdde*.sak34.grd`)
+set fn2=`echo $file | sed 's/.grd//' `
+#*******************************************
+set fre='.'`echo $file | awk -F. '{print $2}' `
+if ($fre == '.007') then
+  set T='143s'
+else if ($fre == '.008') then
+  set T='125s'
+else if ($fre == '.009') then
+  set T='111s'
+else if ($fre == '.01') then
+  set T='100s'
+else if ($fre == '.011') then
+  set T='91s'  
+else if ($fre == '.013') then
+  set T='77s'
+else if ($fre == '.015') then
+  set T='67s'
+else if ($fre == '.017') then
+  set T='59s'
+else if ($fre == '.02') then
+  set T='50s'  
+else if ($fre == '.022') then
+  set T='46s'
+else if ($fre == '.025') then
+  set T='40s'
+else if ($fre == '.03') then
+  set T='33s'
+else if ($fre == '.035') then
+  set T='29s'  
+else if ($fre == '.04') then
+  set T='25s'
+else if ($fre == '.045') then
+  set T='22s'
+else 
+  set T='20s'
+endif
+#***************************************
+
+xyz2grd -R$bds -I.2 $fn2.grd -G$fn2.grd2
+psbasemap -R$bds -JM5.5i -Ba2f2  -Y1.15 -K -P >! $fn2.ps
+psclip clippoly2 -R$bds -JM5.5i -K -O >> $fn2.ps
+grdimage $fn2.grd2 -R$bds -Cerror.cpt -JM5.5i -Ba2f2 -K -O -P >> $fn2.ps
+grdcontour $fn2.grd2 -C.06 -JM5.5i -Ba2f2 -K -O -P >> $fn2.ps
+psclip -C -O -K >> $fn2.ps
+pscoast -R$bds -Dl -A250 -JM5.5i  -W1p -Na -K -O -P >> $fn2.ps
+psxy stations.txt -R$bds -JM5.5i -Sc0.2c -G255/0/0 -N -: -O -K -P >> $fn2.ps
+psscale -D2.5i/7i/5.5i/.25ih -B.02:"$T  2 x standard error km/s":/:: -Cerror.cpt -O -P >> $fn2.ps
+end
+
+rm *.grd2 *.cpt

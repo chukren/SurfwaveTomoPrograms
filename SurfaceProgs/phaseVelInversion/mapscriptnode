@@ -1,0 +1,55 @@
+#!/bin/csh
+#Plot 2-D velocity and standard error by GMT
+
+  set bds=-123/-110/29/37
+#--------------------------velocity--------------------------
+
+  makecpt -Crainbow -I -T3.4/4.6/.1 >! anomaly.cpt
+
+#foreach file (`ls shearvel* `)
+#set fn1=`echo $file | sed 's/.dat//' `
+#set depth=`echo $file | awk -F. '{print $2}' `
+#set depth = 50
+set fn1 = 'nodecoeff50.bl.20'
+#***************************************
+
+#xyz2grd -R$bds -I.2 $fn1.dat -G$fn1.grd2
+#xyz2grd -R$bds -I.2 $fn1 -G$fn1.grd2
+surface -R$bds -I.2 $fn1 -G$fn1.grd2 -T0.5
+psbasemap -R$bds -JM5.5i -Ba2f2  -Y1.15 -K -P >! $fn1.ps
+#psclip clippolyBL -R$bds -JM5.5i -K -O -P >> $fn1.ps
+grdimage $fn1.grd2 -R$bds -Canomaly.cpt -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+#grdcontour $fn1.grd2 -C.5 -JM5.5i -Ba2f2 -K -O -P >> $fn1.ps
+#psclip -C -O -K -P >> $fn1.ps
+pscoast -R$bds -Dl -A250 -JM5.5i  -W1p -Na -K -O -P >> $fn1.ps
+psxy staloclistBL.dat -R$bds -JM5.5i -Sc0.2c -G255/0/0 -N -: -O -K -P >> $fn1.ps
+#psxy $faniso -R$bds -JM5.5i -G0 -SV0.05/0/0 -N -: -O -K -P >> $fn1.ps
+psscale -D2.75i/7i/5.65i/.25ih -B0.1:"$depth km shear velocity (km/s) ":/:: -Canomaly.cpt -O -P >> $fn1.ps
+#end
+
+
+#--------------------------standard error--------------------
+
+makecpt -Crainbow -T0/6/.5 >! error.cpt
+
+#foreach file (`ls  stdde_percentage*km.dat `)
+#set fn2=`echo $file | sed 's/.dat//' `
+#set depth=`echo $file | awk -F. '{print $2}' `
+set depth = 25
+set fn2 = 'stdde.25km.dat'
+#*******************************************
+
+xyz2grd -R$bds -I.2 $fn2.dat -G$fn2.grd2
+psbasemap -R$bds -JM5.5i -Ba2f2  -Y1.15 -K -P >! $fn2.ps
+#psclip clippoly2 -R$bds -JM5.5i -K -O -P >> $fn2.ps
+grdimage $fn2.grd2 -R$bds -Cerror.cpt -JM5.5i -Ba2f2 -K -O -P >> $fn2.ps
+grdcontour $fn2.grd2 -C.05 -JM5.5i -Ba2f2 -K -O -P >> $fn2.ps
+#psclip -C -O -K -P >> $fn2.ps
+pscoast -R$bds -Dl -A250 -JM5.5i  -W1p -Na -K -O -P >> $fn2.ps
+psxy staloclistBL.dat -R$bds -JM5.5i -Sc0.2c -G255/0/0 -N -: -O -K -P >> $fn2.ps
+psscale -D2.5i/7i/5.5i/.25ih -B.5:"km  2 x standard error (%)":/:: -Cerror.cpt -O -P >> $fn2.ps
+end
+
+end
+
+rm *~ *grd2 *.cpt

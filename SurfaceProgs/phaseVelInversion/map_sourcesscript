@@ -1,0 +1,58 @@
+#!/bin/csh
+
+set GRDIMAGE_IT = TRUE
+
+#set LOCATION_FN = ./brlocations
+set DIGDIR = .
+set SOURCES_FN = ./EventLocs
+
+set WIDTH = 6
+set RANGE = 0/360/-90/90
+set SCALE = E-118/32/6
+
+set OFN = BR.sources.ps
+
+pscoast -R$RANGE -J$SCALE -Bf90 -Dc -G200 -K -V -X3 -Y1.5 >! $OFN
+#pscoast -R$RANGE -J$SCALE -Bf90 -Dc -K -V -W1.5p -X3 -Y1.5 >! $OFN
+
+
+# plot plate boundaries
+#psxy $PLATES -R$RANGE -J$SCALE -O -K -M -W1 -V  >> $OFN
+
+
+# plot symbols for earthquakes used
+psxy $SOURCES_FN -R$RANGE -J$SCALE -O -K -Sc0.12 -: -G0 >> $OFN
+
+#draw circles at 30, 60 ,90 degrees away from center of array
+psxy -R$RANGE -J$SCALE -O -K -Sc1.0  <<EOF >> $OFN
+-118.3 32.1
+EOF
+
+psxy -R$RANGE -J$SCALE -O -K -Sc2.0  <<EOF >> $OFN
+-118.3 32.1
+EOF
+
+psxy -R$RANGE -J$SCALE -O -K -Sc3.0  <<EOF >> $OFN
+-118.3 32.1
+EOF
+
+psxy -R$RANGE -J$SCALE -O -K -Sc4.0  <<EOF >> $OFN
+-118.3 32.1
+EOF
+
+psxy -R$RANGE -J$SCALE -O -K -Sc5.0  <<EOF >> $OFN
+-118.3 32.1
+EOF
+
+pstext -R$RANGE -J$SCALE -O -V -W <<EOF >> $OFN
+-110 6 10 0 0 6 30
+-124 -21 10 0 0 6 60
+-160 -51 10 0 0 6 90
+-160 -81 10 0 0 6 120
+-160 -111 10 0 0 6 150
+EOF
+
+
+gs $OFN  
+
+exit

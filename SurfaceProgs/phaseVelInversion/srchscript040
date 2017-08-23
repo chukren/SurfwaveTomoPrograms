@@ -1,0 +1,2 @@
+#!/bin/csh
+./srchwave590.kern.br.d.phc.kres < Master_EQLists/PolyDec_List040.txt
