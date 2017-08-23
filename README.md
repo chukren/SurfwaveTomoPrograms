@@ -16,4 +16,5 @@ Usage: A software package for Rayleigh wave tomography.
 
 #### Note:  
 
-   This is not an open source package yet, please contact authors for detail instruction.  
+   * This is not an open source package yet, please contact authors for detail instruction.  
+   * Original fortran and SAC source codes are under **SurfaceProgs/**
