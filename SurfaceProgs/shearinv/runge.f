@@ -1,0 +1,95 @@
+      SUBROUTINE  RUNGE(Y1,Y2)
+      REAL*8  RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,U,ENGY,DELTA
+      REAL*8  A,F,Y
+      COMMON/VALUE /MODE,IERROR,I,ISTEP,J,K,L,N,NSOL,ISUM,KMAX,
+     1              NMAX,IBOTM,ITOP,LY,LD,ACR,ELLIP,
+     2              RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,
+     3              U,ENGY,DELTA,
+     4              A(6,6),F(20),Y(6)
+      REAL*8  SAVE,WT,W,Y1,Y2,YY,DY
+      DIMENSION  Y1(6,3),Y2(6,3),YY(6,3),DY(6)
+C
+C PURPOSE -   TO INTEGRATE DIFFERENTIAL EQUATION BY A RUNGE-KUTTA METHOD
+C             INITIAL VALUE IS Y1(RC,I)
+C             OUTPUT IS        Y2(RC+HC,I+2*ISTEP)
+C FORMULA     WHEN ALP=1/2, THE SCHEME USED COINCIDES WITH THE FOURTH
+C     ORDER RUNGE-KUTTA FORMULA.   OTHERWISE IT IS  A THIRD ORDER
+C     FORMULA.
+C             HC=H1+H2,  ALP=H1/HC  ASSUMED
+C
+      SAVE=RC
+      II=I
+      WT    =0.5D+0-1.0D+0/(6.0D+0*ALP)
+C
+      CALL  DIFCOE
+C
+      DO  100  NS=1,NSOL
+      DO  100  LL=1,L
+      W=0.0
+      DO  120  LLL=1,L
+      W=W+A(LL,LLL)*Y1(LLL,NS)
+  120 CONTINUE
+      W=HC*W
+      Y2(LL,NS)=Y1(LL,NS)+WT*W
+      YY(LL,NS)=Y1(LL,NS)+ALP*W
+  100 CONTINUE
+C
+      RC=RC+H1
+      I=I+ISTEP
+      WT=WT/ALP
+C
+      CALL  DIFCOE
+C
+      DO  200  NS=1,NSOL
+      DO  210  LL=1,L
+      W=0.0
+      DO  220  LLL=1,L
+      W=W+A(LL,LLL)*YY(LLL,NS)
+  220 CONTINUE
+      W=HC*W
+      DY(LL)=W
+      Y2(LL,NS)=Y2(LL,NS)+WT*W
+  210 CONTINUE
+      DO  230  LLL=1,L
+      YY(LLL,NS)=Y1(LLL,NS)+ALP*DY(LLL)
+  230 CONTINUE
+  200 CONTINUE
+      WT    =1.0D+0/(6.0D+0*ALP*(1.0D+0-ALP))-WT
+C
+      DO  300  NS=1,NSOL
+      DO  310  LL=1,L
+      W=0.0
+      DO  320  LLL=1,L
+      W=W+A(LL,LLL)*YY(LLL,NS)
+  320 CONTINUE
+      W=HC*W
+      DY(LL)=W
+      Y2(LL,NS)=Y2(LL,NS)+WT*W
+  310 CONTINUE
+      DO  330  LLL=1,L
+      YY(LLL,NS)=Y1(LLL,NS)+DY(LLL)
+  330 CONTINUE
+  300 CONTINUE
+C
+      RC=RC+H2
+      I=I+ISTEP
+      WT    =0.5D+0-1.0D+0/(6.0D+0*(1.0D+0-ALP))
+C
+      CALL  DIFCOE
+C
+      DO  400  NS=1,NSOL
+      DO  400  LL=1,L
+      W=0.0
+      DO  420  LLL=1,L
+      W=W+A(LL,LLL)*YY(LLL,NS)
+  420 CONTINUE
+      Y2(LL,NS)=Y2(LL,NS)+WT*HC*W
+  400 CONTINUE
+C
+C EXIT
+C
+ 1000 CONTINUE
+      RC=SAVE
+      I=II
+      RETURN
+      END

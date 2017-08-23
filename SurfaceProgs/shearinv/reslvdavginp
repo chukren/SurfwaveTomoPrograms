@@ -1,0 +1,47 @@
+3DcrustBRafter590.40.120.10.Brandon3
+covmatrix.phaseBR.590.120.120.10.Brandon3
+reslvedSvelBRafter590.40.120.Brandon3
+reslvedSvelRectBRafter590.40.120.Brandon3
+0.10  35.0  1
+6
+20.  65.
+50.  90.
+70.  140.
+90.  170.
+130.  230.
+170.  300.
+
+3DcrustBRafter590.120.40.120.smth
+covmatrix.phaseBR.590.120.40.120.smth
+reslvedSvelBRafter590.120.40.120.smth2
+reslvedSvelRectBRafter590.120.40.120.smth2
+0.25  35.0  0
+6
+20.  65.
+50.  90.
+70.  140.
+90.  170.
+130.  230.
+170.  300.
+
+20.  65.
+50.  100.
+70.  140.
+90.  170.
+130.  230.
+170.  300.
+
+
+3DcrustBRafter590.120.40.120.smth
+covmatrix.phaseBR.590.120.40.120.smth
+reslvedSvelBRafter590.120.40.120.smth
+reslvedSvelRectBRafter590.120.40.120.smth
+0.25  35.0  1
+6
+20.  65.
+50.  100.
+70.  140.
+90.  170.
+130.  230.
+170.  300.
+

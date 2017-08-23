@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+#instructions for running the programs in saito directory
+#
+#1. run './compile' to compile all the subroutines (compile without link)
+#2. run 'make' to compile 'run.saito.f' and 'shearz.f'
+#3. run './shearz' to generate 'gridvelout.dat'
+#4. run './shear-depth' to generate shear velocity files from 'gridvelout.dat' at different depths
+#5. run './anomaly' to calculate the shear velocity anomaly
+#6. run './mapscript' to make the plots  
+
+cp ../gulf_model-1.00/gulf/3Dmodel_yun.txt startmod.dat
+cp ../../phasevel/gridphase.dat .
+./compile
+make
+./shearz
+./shear-depth
+pgf77 ave50-90km.f -o ave50-90km 
+./ave50-90km 
+./anomaly
+./mapscript
+./anomalymap
+
+rm  *~ fort* 

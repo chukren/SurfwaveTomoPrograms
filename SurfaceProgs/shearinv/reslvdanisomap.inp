@@ -1,0 +1,24 @@
+3DanisoBRafter590.80.40.80.10.Brandon2
+covmatrix.anisoBR.590.80.40.80.10.Brandon2
+reslvedAnisoBRafter590.80.40.80.10.Brandon2
+reslvedAnisoRectBRafter590.80.40.80.10.Brandon2
+0.10  35.0  2 4.0
+6
+30.  65.
+50.  100.
+70.  140.
+90.  170.
+130.  230.
+170.  300.
+anisoreslvdamps.80_30.65
+anisoreslvdcircs.80_30.65
+anisoreslvdamps.80_50.100
+anisoreslvdcircs.80_50.100
+anisoreslvdamps.80_70.140
+anisoreslvdcircs.80_70.140
+anisoreslvdamps.80_90.170
+anisoreslvdcircs.80_90.170
+anisoreslvdamps.80_130.230
+anisoreslvdcircs.80_130.230
+anisoreslvdamps.80_170.300
+anisoreslvdcircs.80_170.300

@@ -1,0 +1,129 @@
+      SUBROUTINE  CONT
+      REAL*8  RAD,TMASS,GS,RHO0,GA
+      REAL*8  D,H,RHO,ELAMB,EMU,GR,XI,PHI,ETA
+      COMMON/MODEL /NLAY,ISO,LAME,NDIV,DMAX,ILAY,
+     1              RAD,TMASS,GS,RHO0,GA,
+     2              HI(500),RHOI(500),VPI(500),VSI(500),NAME(20),
+     3              XII(500),PHII(500),ETAI(500),
+     4              D(1000),H(1000),RHO(1000),ELAMB(1000),EMU(1000),
+     5              GR(1000),XI(1000),PHI(1000),ETA(1000)
+      REAL*8  RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,U,ENGY,DELTA
+      REAL*8  A,F,Y
+      COMMON/VALUE /MODE,IERROR,I,ISTEP,J,K,L,N,NSOL,ISUM,KMAX,
+     1              NMAX,IBOTM,ITOP,LY,LD,ACR,ELLIP,
+     2              RMAX,RC,HC,H1,H2,ALP,WN,WN2,C,C2,FRQ,FRQ2,T,
+     3              U,ENGY,DELTA,
+     4              A(6,6),F(20),Y(6)
+      REAL*8  YN,YB,SUM,Q
+      COMMON/SOL/  YN(6,1000),YB(6,3,20),SUM(20),Q(3,21),
+     1             WNB(100),TT(100),CC(100),UU(100),ENG(100),ELL(100),
+     2             AC(100)
+      REAL*8  Y1,Y2,Y3
+      COMMON/Y123 /Y1(6,3),Y2(6,3),Y3(6,3)
+C
+C CONTINUITY AT SOLID-LIQUID BOUNDARIES
+C SURFACE WAVE
+C Y3+WNN*Y4=0
+C
+      DO  10  NS=1,NSOL
+      DO  10  LL=1,L
+      YB(LL,NS,K)=Y1(LL,NS)
+   10 CONTINUE
+C
+      GO TO  (100,200,100,200,100,900),MODE
+C
+C LOVE WAVE TYPE
+C
+  100 CONTINUE
+      IF(EMU(I))  1000,900,1000
+C
+C RAYLEIGH WAVE TYPE
+C
+  200 CONTINUE
+      IF(J-1)  210,220,230
+  210 CONTINUE
+      IF(EMU(I))  211,212,211
+C
+C LIQUID TO SOLID
+C
+  211 CONTINUE
+      NSOL=1
+      L=5
+      Y1(5,1)=-Y1(2,1)
+      Y1(2,1)=0.0
+      Y1(3,1)=0.0
+      Y1(4,1)=0.0
+      GO TO  1000
+C
+C SOLID TO LIQUID
+C
+  212 CONTINUE
+      NSOL=1
+      L=2
+      Y1(1,1)=Y1(4,1)
+      GO TO  1000
+C
+C
+  220 CONTINUE
+      IF(EMU(I))  221,222,221
+C
+C LIQUID TO SOLID
+C
+  221 CONTINUE
+      NSOL=2
+      L=4
+      Y1(3,1)=0.0
+      Y1(4,1)=0.0
+      Y1(1,2)=0.0
+      Y1(2,2)=0.0
+      Y1(3,2)=1.0D+0
+      Y1(4,2)=0.0
+      GO TO  1000
+C
+C SOLID TO LIQUID
+C
+  222 CONTINUE
+      NSOL=1
+      L=2
+      Y1(1,1)=YB(4,3,K)
+      Y1(2,1)=YB(2,3,K)
+      GO TO  1000
+C
+  230 CONTINUE
+      IF(EMU(I))  232,231,232
+C
+C SOLID TO LIQUID
+C
+  231 CONTINUE
+      NSOL=1
+      L=2
+      Y1(1,1)=Y1(1,1)+Y1(1,2)
+      Y1(2,1)=Y1(2,1)+Y1(2,2)
+      GO TO  1000
+C
+C LIQUID TO SOLID
+C
+  232 CONTINUE
+      NSOL=2
+      L=4
+      Y1(3,1)=0.0
+      Y1(4,1)=0.0
+      Y1(1,2)=0.0
+      Y1(2,2)=0.0
+      Y1(3,2)=Q(2,K)
+      Y1(4,2)=0.0
+      GO TO  1000
+C
+C ERROR
+C
+  900 CONTINUE
+c      WRITE(6,901)  MODE
+  901 FORMAT(1H0,5HMODE=,I2,3X,18HCONT(SURFACE WAVE)//)
+      IERROR=3
+      GO TO  1000
+C
+C EXIT
+C
+ 1000 CONTINUE
+      RETURN
+      END

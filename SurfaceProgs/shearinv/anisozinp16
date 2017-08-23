@@ -1,0 +1,177 @@
+10  
+2.0  0.10 1.0 1.2 1 1.0 0.3 0 1 1
+   10  700.0    1.00E-06  4 0 2   0.0        460.0
+3DcrustBRafter590.60.120.10.Brandon3
+lowmantle3.d
+anisoSumBR.590.40.120.10Brandon3
+3DanisoBRafter590.40.120.10.Brandon3
+anisoinversion.BR.590.40.120.10.Brandon3
+anisoresmtrx.BR.590.40.120.10.Brandon3
+covmatin
+covmatrix.anisoBR.590.40.120.10.Brandon3
+3DanisoBRafter590.60.120.10.Brandon3
+gridanso018sBRafter590.40.120.10.Brandon3
+gridanso020sBRafter590.40.120.10.Brandon3
+gridanso022sBRafter590.40.120.10.Brandon3
+gridanso025sBRafter590.40.120.10.Brandon3
+gridanso029sBRafter590.40.120.10.Brandon3
+gridanso033sBRafter590.40.120.10.Brandon3
+gridanso040sBRafter590.40.120.10.Brandon3
+gridanso045sBRafter590.40.120.10.Brandon3
+gridanso050sBRafter590.40.120.10.Brandon3
+gridanso059sBRafter590.40.120.10.Brandon3
+gridanso067sBRafter590.40.120.10.Brandon3
+gridanso077sBRafter590.40.120.10.Brandon3
+gridanso091sBRafter590.40.120.10.Brandon3
+gridanso100sBRafter590.40.120.10.Brandon3
+gridanso111sBRafter590.40.120.10.Brandon3
+gridanso125sBRafter590.40.120.10.Brandon3
+gridanso143sBRafter590.40.120.10.Brandon3
+
+
+15  
+2.0  0.10 1.0 1.2 1 1.0 0.3 0 1 1
+   15  700.0    1.00E-06  4 0 2   0.0        460.0
+3DcrustBRafter590.40.120.10.Brandon2
+lowmantle3.d
+anisoSumBR.590.80.40.80.10Brandon2
+3DanisoBRafter590.80.40.80.10.Brandon2
+anisoinversion.BR.590.80.40.80.10.Brandon2
+anisoresmtrx.BR.590.80.40.80.10.Brandon2
+covmatin
+covmatrix.anisoBR.590.80.40.80.10.Brandon2
+3DanisoBRafter590.40.120.10.Brandon2
+gridanso018sBRafter590.80.40.80.10.Brandon2
+gridanso020sBRafter590.80.40.80.10.Brandon2
+gridanso022sBRafter590.80.40.80.10.Brandon2
+gridanso025sBRafter590.80.40.80.10.Brandon2
+gridanso029sBRafter590.80.40.80.10.Brandon2
+gridanso033sBRafter590.80.40.80.10.Brandon2
+gridanso040sBRafter590.80.40.80.10.Brandon2
+gridanso045sBRafter590.80.40.80.10.Brandon2
+gridanso050sBRafter590.80.40.80.10.Brandon2
+gridanso059sBRafter590.80.40.80.10.Brandon2
+gridanso067sBRafter590.80.40.80.10.Brandon2
+gridanso077sBRafter590.80.40.80.10.Brandon2
+gridanso091sBRafter590.80.40.80.10.Brandon2
+gridanso100sBRafter590.80.40.80.10.Brandon2
+gridanso111sBRafter590.80.40.80.10.Brandon2
+gridanso125sBRafter590.80.40.80.10.Brandon2
+gridanso143sBRafter590.80.40.80.10.Brandon2
+
+17  
+2.0  0.25 1.0 1.2 1 1.0 0.3 0 1 0
+  17  700.0    1.00E-06  4 0 2   0.0        310.0
+3Dcrust_0.25x0.25dd
+lowmantle2.d
+anisoSumBR.590.80.120.dec
+3DanisoBRafter590.80.120.dec
+anisoinversion.BR.590.80.120.dec
+anisoresmtrx.BR.590.80.120.dec
+covmatin
+covmatrix.anisoBR.590.80.120.dec
+prioraniso
+gridanso018sBRafter590.80.120.dec
+gridanso020sBRafter590.80.120.dec
+gridanso022sBRafter590.80.120.dec
+gridanso025sBRafter590.80.120.dec
+gridanso029sBRafter590.80.120.dec
+gridanso033sBRafter590.80.120.dec
+gridanso040sBRafter590.80.120.dec
+gridanso045sBRafter590.80.120.dec
+gridanso050sBRafter590.80.120.dec
+gridanso059sBRafter590.80.120.dec
+gridanso067sBRafter590.80.120.dec
+gridanso077sBRafter590.80.120.dec
+gridanso091sBRafter590.80.120.dec
+gridanso100sBRafter590.80.120.dec
+gridanso111sBRafter590.80.120.dec
+gridanso125sBRafter590.80.120.dec
+gridanso143sBRafter590.80.120.dec
+
+
+
+
+17  
+2.0  0.25 0.0 1.0 1 1.0 0.3
+  17  700.0    1.00E-06  4 0 2   0.0        310.0
+3DcrustBRafterShrt2Long80
+lowmantle2.d
+gridphaseBR.587.120.Shrt2Long
+3DcrustBRafterShrt2Long120
+svelinversion.BR.587Shrt2Long120
+resmatrix.RegionsBR.587Shrt2Long120
+
+6  
+2.0  0.25 0.0 1.0 1 1.0 0.0
+   6  700.0    1.00E-06  4 0 2   0.0        310.0
+3DcrustBRafterRegions60
+lowmantle2.d
+gridphaseBR.587.40.aRegions
+3DcrustBRafterRegions40
+svelinversion.RegionsBR.587.40
+resmatrix.RegionsBR.587.40
+
+
+17  
+3.0  0.25 0.0 1.0 1 1.0 0.3
+  17  700.0    1.00E-06  4 0 2   0.0        310.0
+3Dcrust_0.25x0.25dsw
+lowmantle2.d
+gridphaseBR.587.120.aRegions
+3DcrustBRafterRegionsSWrho
+svelinversion.RegionsBR.687SWrho
+resmatrix.RegionsBR.687SWrho
+
+6  
+2.0  0.25 50.0 1.0 1 1.0
+   6  700.0    1.00E-06  4 0 2   0.0        310.0
+3DcrustBRafterMxdLCrr60
+lowmantle2.d
+gridphaseBR.587.40.MxdLCrr
+3DcrustBRafterMxdLCrr40
+svelinversion.MxdLCrrBR.587.40
+resmatrix.MxdLCrrBR.587.40
+
+17  
+3.0  0.25 50.0 1.0 1 1.0
+  17  700.0    1.00E-06  4 0 2   0.0        310.0
+3Dcrust_0.25x0.25d
+lowmantle2.d
+gridphaseBR.587.120.MxdLC
+3DcrustBRafterMxdLCrr120
+svelinversion.MxdLCrrBR.587.120
+resmatrix.MxdLCrrBR.587.120
+
+6  
+2.0  0.25 50.0 1.0 1 3.0
+   6  700.0    1.00E-06  4 0 2   0.0        310.0
+3DcrustBRafterMxdLCr60
+lowmantle2.d
+gridphaseBR.587.40.MxdLCr
+3DcrustBRafterMxdLCr40
+svelinversion.MxdLCrBR.587.40
+resmatrix.MxdLCrBR.587.40
+
+
+
+14  
+3.0  0.25 50.0 1.0 1
+  14  700.0    1.00E-06  4 0 2   0.0        310.0
+3DcrustBRafterMxdLC60
+lowmantle2.d
+gridphaseBR.587.40.MxdLC
+3DcrustBRafterMxdLC40
+svelinversion.MxdLCBR.587.40
+resmatrix.MxdLCBR.587.40
+
+6  
+2.0  0.25 50.0 1.0 1
+   6  700.0    1.00E-06  4 0 2   0.0        310.0
+3DcrustBRafterMxdLC60
+lowmantle2.d
+gridphaseBR.587.40.MxdLC
+3DcrustBRafterMxdLC40
+svelinversion.MxdLCBR.587.40
+resmatrix.MxdLCBR.587.40
+

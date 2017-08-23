@@ -1,0 +1,16 @@
+#!/bin/csh
+#Plot anisotropy profile in 3D perspective
+
+makecpt -Crainbow -I -T0/1.5/.5 -Z >! aniso2.cpt
+
+set fn1 = 'aniso3.-120.34.590'
+set bds = -0.1/0.1/-0.1/0.1/0/21
+
+
+#psbasemap -R-0.1/0.1/-0.1/0.1/0/210 -JX3i/3i -JZ5i -P -K >! $fn1.ps
+psxyz $fn1 -Jx2.0 -Jz-5.0 -R$bds -SVb0.03/0/0 -Caniso2.cpt -X4.0i -Y3.0i -E0/80 -K -P >! $fn1.ps
+psxyz axis.dat -Jx2.0 -Jz-5.0 -R$bds -E0/80 -O -K -P >> $fn1.ps
+psxyz axis.dat -Jx2.0 -Jz-5.0 -R$bds -S-.2 -E0/80 -O -K -P >> $fn1.ps
+psscale -D0.0i/8.5i/5.5i/.25ih -B0.5:"Amplitude": -Caniso2.cpt -O -P >> $fn1.ps
+
+gs $fn1.ps
