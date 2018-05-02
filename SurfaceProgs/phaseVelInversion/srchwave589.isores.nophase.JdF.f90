@@ -1,16 +1,20 @@
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!=======================================================================================
 !  srchwave589.isores.nophase.JdF.f90 is fortran90 version that outputs resolution 
 !  matrix for isotropic velocity parameters
-! srchwave589.kern.br.d.phc.kres.f  differs from 587 in solving for both aniso
+!
+!  srchwave589.kern.br.d.phc.kres.f  differs from 587 in solving for both aniso
 !  and isotropic lateral variations 
-!                                  srchwave587.kern.br.d.phc.kres.f   
+!                                  
+!  srchwave587.kern.br.d.phc.kres.f   
 !  differs from 586 by correcting for first order effect of lateral velocity changes
 !  on the sensitivity kernels - does not recalculate shape of kernel, but multiples
-!  sensitivity by local correction factor                                             c
-!     586   differs from 584 -  does not use uniform average velocity to correct DC level
+!  sensitivity by local correction factor                                             
+!
+!  586   differs from 584 -  does not use uniform average velocity to correct DC level
 !      of starting velocity model  CJR 2/22/09
-!                            DWF  08/14/09 10/01/09  11/19/09   12/5/09   3/11/10     c
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!                            DWF  08/14/09  10/01/09  11/19/09   12/5/09   3/11/10     
+!                            YYR  04/29/18
+!========================================================================================
 !  calculates fit after linearized inversion to test whether predicted improvement is 
 !  actually achieved
 !
@@ -31,10 +35,9 @@
 !  five iterations 
 !
 !  Outer grid points damped same as interior
-
 !
 !  data: observed phases and amplitudes at each station for each event
-
+!
 !  134 means to invert 2-D isotropic phase velocity ,station site responses 
 !  and anisotropy in each subregions, with starting values for node coefficients
 !  read in based on a priori model. phc means phase corrections,only  
@@ -45,26 +48,28 @@
 !  input about frequencies involved from windowing. With the 
 !  sensitivity kernel data, we can know the sensitivity at each node by 
 !  interpolating the sensitivity kernel. 
-
+!
 !  anisotropy affects scattering
 !     
-
+!
 !  Use minimum length criterion. Does not smooth but penalizes changes, 
 !  with larger variance on outer edges, so that edges can take up
 !  residual junk without propagating effects into the interior
 !  Use tarantola terms to damp solution,grid of node points 
 !  to interpolate velocity, and two plane waves per event
-
+!
 !  Run with piped input file like srchwave134.phc < eqlister50.
 !  eqlister50 is an example file listing earthquake event at period 50s.
 !  
 !  This version reads in non-uniform starting model
-
+!=============================================================================
 
       parameter (maxnfreq=1, maxnsta=300, maxpts=20000, nparam = 4000, &
                 maxnobs = 25000, maxnodes = 2000, maxevnts = 400, &
                 maxnxints = 401, maxnyints = 401,ndeg = 81 )
+      
       parameter (mxfreqkern = 200)
+
       real*4 dph(maxevnts,maxnsta)
       real*4 staph(maxevnts,maxnsta,maxnfreq)
       real*4 staamp(maxevnts,maxnsta,maxnfreq)
@@ -81,7 +86,7 @@
       real*4 attnfac(maxnfreq), xmin(maxevnts,ndeg)
       real*4 amprms(maxevnts,maxnfreq)
       real*4 bazi(maxevnts,maxnsta), stadelt(maxevnts,maxnsta)
-      real*4  d(maxnobs)
+      real*4 d(maxnobs)
       real*4 beg(maxevnts,maxnsta)
       real*4 origmod(nparam),crrntmod(nparam)
       real*4 boxlat(4), boxlon(4),applat,applon
@@ -95,8 +100,8 @@
       real*4 wgtnode1(maxnsta,maxnodes,ndeg)
       real*4 ampwgtnode1(maxnsta,maxnodes,ndeg) 
       real*4 dtime(maxnsta),avslow(maxnsta)
-      real*4 dtime1(maxnsta),dtime2(maxnsta),avslow1(maxnsta), &
-            avslow2(maxnsta)
+      real*4 dtime1(maxnsta),dtime2(maxnsta)
+      real*4 avslow1(maxnsta), avslow2(maxnsta)
       real*4 appvel(maxnodes),vage(maxnodes)
       real*4 cos2node(maxnodes,ndeg),sin2node(maxnodes,ndeg)
       real*4 startamp1(maxevnts),startamp2(maxevnts),stazim1(maxevnts)
@@ -109,8 +114,8 @@
       real*4 damp1per(maxevnts,maxnsta), damp2per(maxevnts,maxnsta)
       real*4 dphase1(maxevnts,maxnsta),dphase2(maxevnts,maxnsta)
       real*4 phase1(maxevnts,maxnsta), phase2(maxevnts,maxnsta)
-      real*4 phase(maxnsta,ndeg),dphase(maxnsta,ndeg), &
-            dampper(maxnsta,ndeg)
+      real*4 phase(maxnsta,ndeg),dphase(maxnsta,ndeg), 
+      real*4 dampper(maxnsta,ndeg)
       real*4 unifvel,ampmult(maxnsta)
       real*4 dxnode,dynode,xbegkern,dxkern
       real*4 ybegkern,dykern
@@ -125,8 +130,8 @@
       integer*4 nxkern,nykern
       integer*4 nsta(maxevnts), iref(maxevnts),idnode(maxnodes)
       integer*4 nfreq,nstapts(maxnsta),indx(nparam),nstacor,nobs
-      integer*4 istanum(maxevnts,maxnsta),istacor(maxnsta), &
-               nnodes, nevents, ntyp1                                
+      integer*4 istanum(maxevnts,maxnsta),istacor(maxnsta)
+      integer*4 nnodes, nevents, ntyp1
       integer*4 ityp1sta(maxnsta)   
       character*12 idnum(maxevnts)                            
       integer*4 nevntsta(maxnsta),istavar(maxnsta)  
@@ -145,6 +150,13 @@
       real*4 kk,lamda
       real*4 amplitude(mxfreqkern), freqkern(mxfreqkern)
       
+      ! Add by YYR for Q kernels 
+      real*4 kern_am2qinv(maxnxints,maxnyints) 
+      real*4 kern_ph2qinv(maxnxints,maxnyints)
+      real*4 freq_ref, kern_Qfactor, kern_phi, kern_denom
+      real*4 ph2phsv, am2phsv
+      real*4 qinv, grpvel
+      real*4 kern_freqdep
       
       character*2   nettemp
       character*4   statemp 
@@ -166,10 +178,11 @@
 !      character*100 foutput,fn(maxevnts,maxnsta),fsummary
 !  ******* changes in this area from yun version
 !      character*100 foutput,fsummary
+
       character*4   staname(maxnsta)
       character*110 fn(maxevnts,maxnsta)
 
-       common /residua/ sensitivity,ampsens,d,rloc,azloc,freq, &
+      common /residua/ sensitivity,ampsens,d,rloc,azloc,freq, &
            xsta,dtime,avslow,streal,stimag,stddevdata,phcor, &
            xbox,ybox,ysta,dxkern,dykern,dxnode,dynode, &
            unifvel,appvel,ampmult,gamma, &
@@ -177,35 +190,42 @@
            phase,dphase,dampper,istavar,istanum,nxkern,nykern, &
            ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes
 
-       common /msft/ bazi,cos2node,sin2node,crrntmod, &
-         startamp1,startamp2,stphase1,stphase2,stazim1,stazim2, &
-         nevents,idnode,ideg1,ideg2,nobs,i6,iarea
+      common /msft/ bazi,cos2node,sin2node,crrntmod, &
+           startamp1,startamp2,stphase1,stphase2,stazim1,stazim2, &
+           nevents,idnode,ideg1,ideg2,nobs,i6,iarea
      
-       common /gengrid/ nodelat,nodelon,boxlat,boxlon
+      common /gengrid/ nodelat,nodelon,boxlat,boxlon
        
-       common /update2/ covar,vchange
+      common /update2/ covar,vchange
 
 
       pi = 3.1415928
       convdeg = 3.1415928/180.
       circ = 6371.*3.1415928/180.
       twopi = 3.1415928*2.
+
+      ! Note we choose 50 s rather than 1 sec for the reference frequency
+      ! Therefore the inversion results cannot be directly compare with 
+      ! PREM model or other model which normally obtained at 1 Hz
+
+      freq_ref = 0.02 ! Hz 
   
 
 ! Corresponding ID for abnormal stations.                   
 ! ntyp1: number of stations need phase correction
-        ntyp1 = 0                                                     
-!        data (ityp1sta(ityp), ityp=1, 4 )/1,3,172,174/
-        if (ntyp1.ne.0) then              
-          ityp1sta(1) = 1
-          ityp1sta(2) = 3
-          ityp1sta(3) = 172
-          ityp1sta(4) = 174
-        endif
+      ntyp1 = 0 
 
-200         format(a75, i2)
-201         format(a70, a2)
-202         format(a60, a4)
+!        data (ityp1sta(ityp), ityp=1, 4 )/1,3,172,174/
+      if (ntyp1.ne.0) then              
+        ityp1sta(1) = 1
+        ityp1sta(2) = 3
+        ityp1sta(3) = 172
+        ityp1sta(4) = 174
+      endif
+
+200   format(a75, i2)
+201   format(a70, a2)
+202   format(a69, a4) ! precise cut the STANM out from the path file
 
 !  read list of files and frequencies to be analyzed and files to output results
 !  Usually will pipe in data from some file like eqlistper50. 
@@ -214,8 +234,7 @@
 
       call getarg(1, buffer)
       read(buffer,'(a)') inputfile
-      
-      write(*,*) inputfile
+      write(*,*) "read", inputfile
         
       open(99, file = inputfile)
 
@@ -234,7 +253,7 @@
       enddo
 
       read(99,*) nfreq
-      read(99,*) (freq(j), j= 1, nfreq)
+      read(99,*) (freq(j), j= 1, nfreq) ! Hz
       read(99,*) foutput
       read(99,*) fsummary
       read(99,*) finvrsnodes
@@ -244,7 +263,8 @@
       read(99,*) ftemp
       read(99,*) fvelnodes
       read(99,*) fstalist
-      read(99,*) unifvel 
+      read(99,*) unifvel       ! km/s
+      read(99,*) qinv, grpvel  ! reference 1/Q and group velocity
       read(99,*) iterlimit, dampvel, dampaniso, divfac
       read(99,'(a)') sensfn
       read(99,*) fvelout
@@ -260,28 +280,29 @@
 !   iterlimit is maximum number of iterations to use
 !  dampvel is a priori stddev for velocity terms, dampaniso for aniso coeff.
 
-!  read data
+      !  read data
       open(10, file = foutput)
       print *, "bp 1d"
       open(11, file = fsummary)
       open(12, file = fftinput)
       open(13, file = ftemp)
       open(14, file = "followit12")
-!      open(15, file = finvrsnodes)
       open(16, file = fvariance)
       open(18, file = fstalist)
       open(30, file = fvelout)
-!      open(66, file = dirpath//sensfn)
       open(66, file = sensfn)
-!      open(60, file = startvel)
       open(21, file = fresdiag)
       open(17, file = fresmat)
-      print *, "bp 2"
+!      open(15, file = finvrsnodes)
+!      open(60, file = startvel)
+!      open(66, file = dirpath//sensfn)
 
-!  do following step to extract station name from filename,
-!  count number of events at each station and assign a station number 
-!
-!  first, read in master list of stations    
+      print *, "bp 2"
+      !  do following step to extract station name from filename,
+      !  count number of events at each station and assign a station number 
+      !
+      !  first, read in master list of stations   
+
       do ista = 1, maxnsta
         nevntsta(ista) = 0
         read(18,*) staname(ista)
@@ -299,11 +320,15 @@
           write(13,'(a)') fn(iev,ista)
           rewind (13)
          
-!  ******** modify here depending on how you assign your station ID  **************
+          !  ******** 
+          !  modify here depending on how you cut input line 
+          !  to assign your station ID precisely. 
+          !  Need to be improved
+          !  **************
           read (13,202) dummy1, statemp
 
           rewind (13)
-!	  print *, statemp
+          !print *, statemp
           istanum(iev,ista) = 0
 
           do ista2 = 1, mxnsta
@@ -316,12 +341,13 @@
           if (istanum(iev,ista).eq.0) then
             write(*,*) 'WARNING ', statemp,' not in station list'
           endif
-!          write (*,*) ista, istanum(iev,ista),statemp
+        
+          ! write (*,*) ista, istanum(iev,ista),statemp
         enddo
       enddo
 
-!  count number of stations that have events and assign each station number a
-!  variable number
+      ! count number of stations that have events and assign each 
+      ! station number a variable number
 
       jstacnt = 0
       do ista = 1, mxnsta
@@ -361,12 +387,12 @@
 
 !     generate sensitivity kernel
 !     first, read in spectral file of frequencies and relative amps involved in particular
-!        window/period processing for this target frequency
+!     window/period processing for this target frequency
       print *, "bp 4"
 
       radius = 6371.
       read(66,*) nxkern, xbegkern, dxkern
-      read(66,*) nykern,ybegkern, dykern
+      read(66,*) nykern, ybegkern, dykern
       
       if ((nxkern.gt.maxnxints).or.(nykern.gt.maxnyints)) then
         write (*,*) "Too many points in sensitivity kernel"
@@ -379,11 +405,11 @@
         read(66,*) freqkern(ifreqkern), amplitude(ifreqkern)
       enddo
 
-!  add extra, interpolated frequencies	
+      !  add extra, interpolated frequencies	
       do ifreqkern = 1, nkernfreq-1
         amplitude(ifreqkern+nkernfreq) = 0.5*(amplitude(ifreqkern) &
                                 + amplitude(ifreqkern+1))
-          freqkern(ifreqkern+nkernfreq) = 0.5*(freqkern(ifreqkern) &
+        freqkern(ifreqkern+nkernfreq)  = 0.5*(freqkern(ifreqkern) &
                                 +freqkern(ifreqkern+1))
       enddo
 
@@ -401,6 +427,10 @@
         do iykern = 1,nykern
           amsens(ixkern,iykern) = 0.0
           phsens(ixkern,iykern) = 0.0
+
+          kern_am2qinv(ixkern,iykern) = 0.0
+          kern_ph2qinv(ixkern,iykern) = 0.0
+
           sensitivity(ixkern,iykern) = 0.
           ampsens(ixkern,iykern) = 0.
         enddo
@@ -410,9 +440,12 @@
       
 
       do ifreqkern = 1, nkernfreq
-        period = 1.0/freqkern(ifreqkern)
+        period = 1.0/freqkern(ifreqkern) 
         lamda = unifvel*period
         kk = 2.0*pi/lamda*radius
+
+        kern_Qfactor = 0.5*unifvel*qinv/grpvel 
+        kern_freqdep = 2.0 / onepi * log(1./period / freq_ref)
 
         do ixkern = 1,nxkern
           xkern = (ixkern-1)*dxkern + xbegkern
@@ -426,19 +459,33 @@
             else
               delta2 = sqrt(xkern**2+ykern**2)
             endif
-! formula from Ying Zhou et al., 2004, GJI 3-D sensitivity kernels for surface-wave observables
+
+            ! 2D velocity kernels are from Zhou et al. (2004), GJI, "3-D sensitivity 
+            !  kernels for surface-wave observables"
+
+            kern_phi = kk*(delta1+delta2)/radius + pi/4.
+            kern_denom = sqrt(8.*pi*kk*abs(sin(delta2/radius)))
+
+            ph2phsv = (-2.)* kk**2. * sin(kern_phi) / kern_denom
+            am2phsv = (-2.)* kk**2. * cos(kern_phi) / kern_denom
+
+            ph2phsv = ph2phsv * amplitude(ifreqkern) 
+            am2phsv = am2phsv * amplitude(ifreqkern)
 
             phsens(ixkern,iykern) = phsens(ixkern,iykern) + &
-                      amplitude(ifreqkern)*(-2.)*kk**2. &
-                      *sin(kk*(delta1+delta2)/radius+pi/4.) &
-                      /sqrt(8.*pi*kk*abs(sin(delta2/radius))) &
-                      * ((dxkern*dykern)/radius**2) 
+                      ph2phsv * ((dxkern*dykern)/radius**2) 
 
             amsens(ixkern,iykern) = amsens(ixkern,iykern) + &
-                      amplitude(ifreqkern)*(-2.)*kk**2. &
-                      *cos(kk*(delta1+delta2)/radius+pi/4.) &
-                      /sqrt(8.*pi*kk*abs(sin(delta2/radius))) &
-                      * ((dxkern*dykern)/radius**2)
+                      am2phsv * ((dxkern*dykern)/radius**2)
+
+            ! 2D anelasticity (1/Q) kernels are the combinations of velocity kernels
+            ! Zhou (2009), GJI 
+            
+            kern_am2qinv(ixkern,iykern) = kern_am2qinv(ixkern,iykern) &
+                      + kern_Qfactor*(kern_freqdep*ph2phsv - am2phsv)
+            
+            kern_am2qinv(ixkern,iykern) = kern_am2qinv(ixkern,iykern) &
+                      + kern_Qfactor*(ph2phsv + kern_freqdep*am2phsv)
               
           enddo
         enddo
@@ -2343,14 +2390,14 @@
       integer*4   istavar(maxnsta)
       integer*4 nxkern,nykern, nnodes
       integer*4 ityp1sta(maxnsta),ntyp1 
-                                                                                
+                                                                        
       common /residua/ sensitivity,ampsens,d,rloc,azloc,freq, &
         xsta,dtime,avslow,streal,stimag,stddevdata,phcor,  &
         xbox,ybox,ysta,dxkern,dykern,dxnode,dynode, &
         unifvel,appvel,ampmult,gamma, &
         xnode, ynode,wgtnode1,ampwgtnode1,xmin, &
         phase,dphase,dampper,istavar,istanum,nxkern,nykern, &
-        ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes                 
+        ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes
 
       twopi = 3.1415928*2.
       onepi = 3.1415928
