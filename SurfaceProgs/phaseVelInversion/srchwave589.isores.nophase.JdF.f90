@@ -225,7 +225,7 @@
 
 200   format(a75, i2)
 201   format(a70, a2)
-202   format(a69, a4) ! precise cut the STANM out from the path file
+202   format(a69, a4) ! precisely cut the STANM out from the path file
 
 !  read list of files and frequencies to be analyzed and files to output results
 !  Usually will pipe in data from some file like eqlistper50. 
@@ -275,12 +275,12 @@
       print *, "bp 1c"
 
 
-!  unifvel is average velocity found from inverting data previously for a single velocity
-!  parameter
-!   iterlimit is maximum number of iterations to use
-!  dampvel is a priori stddev for velocity terms, dampaniso for aniso coeff.
+      ! unifvel: Average velocity found from inverting data previously 
+      !          for a single velocity parameter
+      ! iterlimit: Maximum number of iterations to use
+      ! dampvel: a priori stddev for velocity terms, dampaniso for aniso coeff.
 
-      !  read data
+      ! read data
       open(10, file = foutput)
       print *, "bp 1d"
       open(11, file = fsummary)
@@ -390,7 +390,7 @@
 !     window/period processing for this target frequency
       print *, "bp 4"
 
-      radius = 6371.
+      radius = 6371.  ! km
       read(66,*) nxkern, xbegkern, dxkern
       read(66,*) nykern, ybegkern, dykern
       
@@ -449,6 +449,7 @@
 
         do ixkern = 1,nxkern
           xkern = (ixkern-1)*dxkern + xbegkern
+
           delta1 = xkern
 
           do iykern = 1,nykern
@@ -493,8 +494,10 @@
 
       print *, "bp 5"   
 
-!  now take these raw sensitivity kernels and find net effect for node velocities using
-!  linear interpolation between nodes, essentially convolving interpolater with raw kernels
+      !  now take these raw sensitivity kernels and find net effect for node 
+      !  velocities using linear interpolation between nodes, essentially 
+      !  convolving interpolater with raw kernels
+
       ixoff = dxnode/dxkern
       iyoff = dynode/dykern
 
@@ -522,10 +525,12 @@
               do iy = iyybeg,iyyend
                 ykk = (iy-1)*dykern + ybegkern
                 wgtkern = (1.-abs(xk-xkk)/dxnode)*(1.-abs(yk-ykk)/dynode)
+
                 sensitivity(ixkern,iykern) = sensitivity(ixkern,iykern) &
                                   + phsens(ix,iy)*wgtkern
                 ampsens(ixkern,iykern) = ampsens(ixkern,iykern) &
                                   + amsens(ix,iy)*wgtkern
+        
                 wgtsum = wgtsum+wgtkern
               enddo
             enddo
@@ -537,19 +542,19 @@
         enddo
       enddo
 
-!  renormalize sensitivity kernels
+      !  renormalize sensitivity kernels
       sensnorm =  (dxnode*dynode)/(dxkern*dykern)
       
       do ixkern = 1,nxkern
         do iykern = 1,nykern
-         sensitivity(ixkern,iykern) = sensitivity(ixkern,iykern)*sensnorm
-         ampsens(ixkern,iykern)= ampsens(ixkern,iykern)*sensnorm
+          sensitivity(ixkern,iykern) = sensitivity(ixkern,iykern)*sensnorm
+          ampsens(ixkern,iykern)= ampsens(ixkern,iykern)*sensnorm
         enddo
       enddo
 
-      write (*,*) 'done with sensitivity'
+      write (*,*) 'done with sensitivity'11111
 
-! assign velocities to each grid node apriori
+      ! assign velocities to each grid node apriori
       write(*,*) 'bp 5a'
       write(*,*) startvel
       
@@ -557,33 +562,35 @@
                                  ncol,dxnode,dynode)
       
       write(*,*) 'bp 5b'
+      !  read in starting node velocities based on a priori crustal model
+      !  but modify velocities for offset between average a priori and 
+      !  observed average from uniform velocity inversion - lateral 
+      !  velocity variations will be preserved, but reference velocity 
+      !  will be observed average
 
       do i = 1, nnodes
-!  read in starting node velocities based on a priori crustal model
-!  but modify velocities for offset between average a priori and 
-!  observed average from uniform velocity inversion - lateral velocity
-!  variations will be preserved, but reference velocity will be observed average
+        ! nodevel(i)=unifvel
+        ! read(60,*) xx1,xx2, nodevel(i)
 
-!c         nodevel(i)=unifvel
+        ! following line is where 586 differs from 584 - without this line, 
+        ! the second following line would shift the DC level of the starting 
+        ! predicted phase velocity model to agree with average velocity 
+        ! inferred previously from a 1-D inversion
 
-!        read(60,*) xx1,xx2, nodevel(i)
-!
-!  following line is where 586 differs from 584 - without this line, the second following
-!  line would shift the DC level of the starting predicted phase velocity model to agree with  
-!  average velocity inferred previously from a 1-D inversion
         unifvel = preunifvel
         nodevel(i) = nodevel(i) + unifvel - preunifvel
 !	write(14,*) nodelat(i),nodelon(i),nodevel(i)
       enddo
 
 
-! Can input gridnode file to solve anisotropy in different areas.
-!	open(20, file='gridnode.aniso.id')
-!	open(20, file='invnodesethp_area2_test_ridge.d')
-!	read(20,*) iarea
-!
-!  In version 589, iarea = nnodes
-!	 iarea = 1
+      ! Can input gridnode file to solve anisotropy in different areas.
+      ! open(20, file='gridnode.aniso.id')
+      ! open(20, file='invnodesethp_area2_test_ridge.d')
+      ! read(20,*) iarea
+
+      !
+      !  In version 589, iarea = nnodes
+      !	 iarea = 1
       iarea = nnodes
       
       do i=1, nnodes
@@ -603,10 +610,11 @@
 
         do ista = 1, nsta(iev)
           read(12,*) beg(iev,ista)
-          read(12,*) stadist(iev,ista),staazi(iev,ista), bazi(iev,ista), &
-          stadelt(iev,ista), stalat(iev,ista), stalon(iev,ista)
+          read(12,*) stadist(iev,ista), staazi(iev,ista), &
+                     bazi(iev,ista), stadelt(iev,ista), &
+                     stalat(iev,ista), stalon(iev,ista)
           read(12,*) (staamp(iev,ista,ifreq),staph(iev,ista,ifreq), &
-                                     ifreq=1,nfreq)
+                     ifreq=1,nfreq)
         enddo
       enddo
     
@@ -627,29 +635,32 @@
         write(10,*) freq(ifreq)
         write(11,*) freq(ifreq)
         write(14,*) freq(ifreq)
-        write(*,*) freq(ifreq)
-!  assume a priori data covariance = 0.2  Function of this constant value is
-!  to make damping based on real estimates about the right size.
+        write(*,*)  freq(ifreq)
+
+        !  assume a priori data covariance = 0.2  
+        !  Function of this constant value is to make damping based on 
+        !  real estimates about the right size.
+
         do iev = 1, nevents
           stddevdata(iev) = 0.2
         enddo
 
-!  set up model covariances or damping to be added to diagonal of gtg
-!  variables are amplitudes, directions, initial phases for each event
-!  followed by isotropic velocities, anisotropic velocities for each area
-!  then amplitude correction factors, phase correction factors for anomalous 
-!  stations and attenuation factor gamma
+        !  set up model covariances or damping to be added to diagonal of 
+        !  gtg variables are amplitudes, directions, initial phases for 
+        !  each event followed by isotropic velocities, anisotropic 
+        !  velocities for each area then amplitude correction factors, phase 
+        !  correction factors for anomalous stations and attenuation factor gamma
         
-        npnoamp = 6*nevents + 1*nnodes+ 2*iarea 
+        npnoamp = 6*nevents + 1*nnodes + 2*iarea 
         npp = npnoamp + jstacnt 
-        np = npp+ntyp1 + 1                           
-        kj = nnodes/ncol
+        np = npp + ntyp1 + 1                           
+        kj = nnodes / ncol
         i6 = 6*nevents
 
-!   ***************************************
-!   WARNING - the previous is specific to grid of node points - specify iages
-!   even if age zones not explicitly used in inversion - needed for 
-!   later smoothing
+        !   ***************************************
+        !   WARNING - the previous is specific to grid of node points - specify iages
+        !   even if age zones not explicitly used in inversion - needed for 
+        !   later smoothing
         do ii = 1, np
           change(ii) = 0.0
         enddo
@@ -663,12 +674,13 @@
           covinv(4+ip) = 1./((3.*convdeg)**2)
           covinv(5+ip) = 1./(.05**2)
           covinv(6+ip) = 1./(.05**2)
-!          covinv(1+ip) = 1./(0.0010**2)
-!          covinv(2+ip) = 1./(0.0010**2)
-!          covinv(3+ip) = 1./((.03*convdeg)**2)
-!          covinv(4+ip) = 1./((.03*convdeg)**2)
-!          covinv(5+ip) = 1./(.0005**2)
-!          covinv(6+ip) = 1./(.0005**2)
+
+          !covinv(1+ip) = 1./(0.0010**2)
+          !covinv(2+ip) = 1./(0.0010**2)
+          !covinv(3+ip) = 1./((.03*convdeg)**2)
+          !covinv(4+ip) = 1./((.03*convdeg)**2)
+          !covinv(5+ip) = 1./(.0005**2)
+          !covinv(6+ip) = 1./(.0005**2)
 
           !  make covinv damping much tighter for grid search than for 
           !  simulated annealing so that linearized step following grid 
@@ -678,7 +690,7 @@
         do ii= 1, nnodes
           ip = i6 + ii
           origmod(ip) = nodevel(ii)
-!          origmod(ip) = unifvel
+          !origmod(ip) = unifvel
           covinv(ip) = 1./(dampvel**2)
           crrntmod(ip) = origmod(ip)
         enddo
@@ -687,31 +699,31 @@
         do i =1, iarea
           ipp = i6 + nnodes + i
           ippp = ipp + iarea 
-          origmod(ipp) = 0.0
+          origmod(ipp)  = 0.0
           origmod(ippp) = 0.0
-          covinv(ipp) = 1./(dampaniso**2)
+          covinv(ipp)  = 1./(dampaniso**2)
           covinv(ippp) = 1./(dampaniso**2)
-          crrntmod(ipp) = origmod(ipp)
+          crrntmod(ipp)  = origmod(ipp)
           crrntmod(ippp) = origmod(ippp)
         enddo  
 
-!  initialize station correction variables and attenuation factor
-!  May become singular if don't constrain average multiplication factor
-!  because can multiply all by same amount and will trade-off with 
-!  amplitude factors perfectly - add data point with small standard 
-!  deviation
+        !  initialize station correction variables and attenuation factor
+        !  May become singular if don't constrain average multiplication factor
+        !  because can multiply all by same amount and will trade-off with 
+        !  amplitude factors perfectly - add data point with small standard 
+        !  deviation
 
         do ii = 1, jstacnt
           ampmult(ii) = 1.0
           ip = npnoamp+ii
           origmod(ip) = ampmult(ii)
           crrntmod(ip) = origmod(ip)
-!         covinv(ip) = 1.0/(0.30**2)
+          !covinv(ip) = 1.0/(0.30**2)
           covinv(ip) = 1.0/(0.10**2)          
         enddo
 
 
-!  initialize phase corrections for different instruments
+        !  initialize phase corrections for different instruments
         if (ntyp1.ne.0) then             
           do ii=1, ntyp1      
             phcor(ii)=0.0                                               
@@ -723,14 +735,14 @@
         endif
 
 
-!  initialize gamma factor for attenuation
+        !  initialize gamma factor for attenuation
         gamma = 0.0
         origmod(np) = gamma
         crrntmod(np) = origmod(np)
         covinv(np) = 1.0/(0.0002**2)
 
 
-!  increase the variance for edges for velocity 
+        !  increase the variance for edges for velocity 
         varfac2 = 1.
         do itp = 1,1
           ityp = nnodes*(itp-1)
@@ -766,12 +778,12 @@
 
         do iev = 1, nevents
 
-!  Find reference station that has largest amplitude for each event.  
-!  At this station, interfering waves should be nearly in phase and 
-!  amplitude = sum of amps of individual waves
+          !  Find reference station that has largest amplitude for each event.  
+          !  At this station, interfering waves should be nearly in phase and 
+          !  amplitude = sum of amps of individual waves
 
-!  Also find normalizing amplitude to equalize earthquakes of different
-!  size, using rms amplitude (old version used largest amplitude)
+          !  Also find normalizing amplitude to equalize earthquakes of different
+          !  size, using rms amplitude (old version used largest amplitude)
 
           amplarge =0.0
           amprms(iev,ifreq) = 0.0
@@ -779,7 +791,7 @@
 
           do ista = 1, nsta(iev)
             amprms(iev,ifreq) = amprms(iev,ifreq) &
-                                  + staamp(iev,ista,ifreq)**2
+                                + staamp(iev,ista,ifreq)**2
 
             if (staamp(iev,ista,ifreq).gt.amplarge) then
               amplarge = staamp(iev,ista,ifreq)
@@ -787,17 +799,20 @@
             endif
 
           enddo
-!	write(*,*) iev,iref(iev)
+
+          ! write(*,*) iev,iref(iev)
           amprms(iev,ifreq) = sqrt(amprms(iev,ifreq)/nsta(iev))
 
   
-!  Use reference station for to set up local coordinate system
-!  based on reference station at zero, zero.  Use distances to stations rather
-!  than absolute coordinates as way of correcting for curving wavefront.  This
-!  will tend to favor keeping azimuth at original azimuth along great circle.
-!  + x direction is in direction of propagation along great circle path.
-!  +y is 90 deg counterclockwise from x
-!   staazi are measured clockwise from north
+          !  Use reference station for to set up local coordinate system
+          !  based on reference station at zero, zero.  Use distances to 
+          !  stations rather than absolute coordinates as way of correcting 
+          !  for curving wavefront.  This will tend to favor keeping azimuth 
+          !  at original azimuth along great circle.
+         
+          !  + x direction is in direction of propagation along great circle path.
+          !  +y is 90 deg counterclockwise from x
+          !  staazi are measured clockwise from north
           xsta(iev,iref(iev))  = 0.0
           ysta(iev,iref(iev))  = 0.0
           rloc(iev,iref(iev))  = 0.0
@@ -819,24 +834,28 @@
             endif
           enddo
 
-!  calculate apparent pole position of earthquake for spherical earth
-!  instead of real location so that coordinate system for nodes will agree
-!  with that for stations 
+          !  calculate apparent pole position of earthquake for spherical earth
+          !  instead of real location so that coordinate system for nodes will agree
+          !  with that for stations
+
           call gohead(stalat(iev,iref(iev)),stalon(iev,iref(iev)), &
                stadelt(iev,iref(iev)),bazi(iev,iref(iev)),applat,applon)
+
           call disthead(applat,applon,stalat(iev,iref(iev)), &
                stalon(iev,iref(iev)),delta,tazimref)
-!  now calculate x,y of each node 
-!  this approach seems to work pretty well - agrees within about 0.1% with
-!  station calculations based on elliptical great circle distance in terms
-!  of relative position
+
+
+          !  now calculate x,y of each node 
+          !  this approach seems to work pretty well - agrees within about 0.1% with
+          !  station calculations based on elliptical great circle distance in terms
+          !  of relative position
           appcirc = stadist(iev,iref(iev))/stadelt(iev,iref(iev))
       
           do inode = 1, nnodes
-            call disthead(applat,applon,nodelat(inode),nodelon(inode) &
-                                             ,delta,tazim)
-            call disthead(nodelat(inode),nodelon(inode),applat,applon &
-                                             ,delta,bazimnd(inode))
+            call disthead(applat,applon,nodelat(inode),nodelon(inode), &
+                          delta,tazim)
+            call disthead(nodelat(inode),nodelon(inode),applat,applon, &
+                          delta,bazimnd(inode))
 
             xnode(iev,inode) = appcirc*delta - stadist(iev,iref(iev))
             azidiff = tazimref - tazim
@@ -847,7 +866,7 @@
             ynode(iev,inode) = appcirc*sin(delta*convdeg)*azidiff
           enddo
 
-!  similarly for outlines of region of interest
+          !  similarly for outlines of region of interest
           do ibox = 1, 4
             call disthead(applat,applon,boxlat(ibox),boxlon(ibox) &
                                              ,delta,tazim)
@@ -858,10 +877,10 @@
             if (azidiff.lt.-180.) azidiff = azidiff +360.
         
             ybox(iev,ibox) = appcirc*sin(delta*convdeg)*azidiff
-!      write(*,*) ibox, xbox(ibox),ybox(ibox),delta, tazim
+            !      write(*,*) ibox, xbox(ibox),ybox(ibox),delta, tazim
           enddo
 
-!  find closest corner along great circle path
+          !  find closest corner along great circle path
           xboxmin = xbox(iev,1)
           jbox(iev) = 1
         
@@ -872,33 +891,33 @@
             endif
           enddo      
 
-!  find the mininum intersection point with corner for each allowed
-!  azimuthal deviation of the two plane waves
-!  - do not switch corners with azimuths as this
-!  may cause discontinuous changes in needed wave parameters
-! xmin here is distance from reference station of wavefront along path of
-!  plane waves coming in at different angles
+          !  find the mininum intersection point with corner for each allowed
+          !  azimuthal deviation of the two plane waves
+          !  - do not switch corners with azimuths as this may cause discontinuous 
+          !  changes in needed wave parameters xmin here is distance from reference 
+          !  station of wavefront along path of plane waves coming in at different angles
 
           do 124 ideg = 1,ndeg
             azimt = ((ideg-1.) - (ndeg-1.)/2.)*convdeg
-            xmin(iev,ideg) = &
-                             xbox(iev,jbox(iev))*cos(azimt) &
-                             + ybox(iev,jbox(iev))*sin(azimt) 
+            xmin(iev,ideg) = xbox(iev,jbox(iev))*cos(azimt) &
+                           + ybox(iev,jbox(iev))*sin(azimt) 
 
   124     enddo
 
               
-!  generate real and imaginary components normalized by rms amplitude
-!  and compared to phase at reference station
-!  Phase shift relative to reference corrected for any difference in start time
+          !  generate real and imaginary components normalized by rms amplitude
+          !  and compared to phase at reference station. Phase shift relative to 
+          !  reference corrected for any difference in start time
                   
           do ista = 1, nsta(iev)
 
-            dph(iev,ista) = staph(iev,ista,ifreq)-staph(iev,iref(iev), &
-                 ifreq) + freq(ifreq)*(beg(iev,ista)-beg(iev,iref(iev)))
-            streal(iev,ista,ifreq)=staamp(iev,ista,ifreq) &
+            dph(iev,ista) = staph(iev,ista,ifreq) - staph(iev,iref(iev),ifreq) &
+                          + freq(ifreq)*(beg(iev,ista)-beg(iev,iref(iev)))
+            
+            streal(iev,ista,ifreq) =  staamp(iev,ista,ifreq) &
                   *cos(dph(iev,ista)*twopi)/amprms(iev,ifreq)
-            stimag(iev,ista,ifreq)=-staamp(iev,ista,ifreq) &
+
+            stimag(iev,ista,ifreq) = -staamp(iev,ista,ifreq) &
                   *sin(dph(iev,ista)*twopi)/amprms(iev,ifreq)
           enddo 
 
@@ -906,10 +925,10 @@
 
 
         print *, "bp 2"
-!  construct form of a priori smooothness criterion matrix for velocity 
-!  parameters  (minimum curvature)
+        !  construct form of a priori smooothness criterion matrix for velocity 
+        !  parameters  (minimum curvature)
 
-!  initialize
+        !  initialize
         do ismth = 1, nnodes
           do jsmth = 1, nnodes
             b(ismth,jsmth) = 0.0
@@ -917,7 +936,7 @@
           enddo
         enddo
 
-!  curvature terms in y-direction - but skip at edges where undefined
+        !  curvature terms in y-direction - but skip at edges where undefined
         do ismth = 1,ncol
           do jsmth = 2, kj-1
             ism = (ismth-1)*kj + jsmth
@@ -927,7 +946,7 @@
           enddo
         enddo
 
-!  curvature terms in x-direction
+        !  curvature terms in x-direction
         do jsmth = 1, kj
           do ismth = 2, ncol-1
             ism = (ismth-1)*kj + jsmth 
@@ -943,7 +962,7 @@
           enddo
         enddo
 
-!  now construct BtransposeB	
+        !  now construct BtransposeB	
         do j = 1, nnodes
           do jj = 1,j
             btb(jj,j) = 0.0
@@ -964,15 +983,15 @@
         iter = 1
         icnt = 1
 
-!  add one data point for constraint on amplitude multipliers that has to
-!  equal number of station corrections 
+        !  add one data point for constraint on amplitude multipliers  
+        !  that has to equal number of station corrections 
         nobs = nobs + 1 
         dstacnt = jstacnt
 
 100     continue
 
-!  increase a priori variance for station amplitude corrections after 5
-!  iterations
+        !  increase a priori variance for station amplitude corrections 
+        !  after 5 iterations
 
         if (icnt.gt.5) then
           do ii = 1, jstacnt
@@ -990,7 +1009,7 @@
         d(nobs) = (dstacnt - sumampcor)/1.0e-4     
         write(*,*) iter, icnt
 
-!  initialize g matrix
+        !  initialize g matrix
         do irow = 1, nobs
           do icol = 1, np
             g(irow,icol) = 0.0
@@ -1003,7 +1022,7 @@
         enddo 
 
 
-!  begin loop over events for residuals and partial derivatives
+        !  begin loop over events for residuals and partial derivatives
 
         naddat = 0
  
@@ -1066,11 +1085,12 @@
               xstanode = xnodetemp - xstatemp
               ystanode = ynodetemp - ystatemp
 
-!  find nearest point in sensitivity kernel - kernels should have been
-!  calculated with smoothing so that they represent sensitivity to nodal
-!  coefficient rather than velocity at point  - could interpolate, but 
-! this is sufficiently accurate if kernels on fine enough scale (i.e.,
-!  dxkern << smoothing length
+              !  find nearest point in sensitivity kernel - kernels 
+              !  should have been calculated with smoothing so that 
+              !  they represent sensitivity to nodal coefficient rather 
+              !  than velocity at point  - could interpolate, but this 
+              !  is sufficiently accurate if kernels on fine enough scale, 
+              !  i.e., dxkern << smoothing length.
 
               if (xnodetemp.ge.xmin(iev,ideg)) then
                 if (xstanode.ge.0.0) then
@@ -1089,16 +1109,15 @@
                 if (ixindex .lt.1 .or. ixindex .gt. nxkern &
                     .or. iyindex .lt.1 .or. iyindex .gt. nykern) then 
 
-
                   write(*,*) 'ixindex,iyindex,iev,ista,ideg', &
-                            ixindex,iyindex,iev,ista,ideg
+                              ixindex,iyindex,iev,ista,ideg
+
                   wgtnode1(ista,ii,ideg)    = 0.
                   ampwgtnode1(ista,ii,ideg) = 0.  
 
                 else
-
                   wgtnode1(ista,ii,ideg) = sensitivity(ixindex,iyindex)
-                  ampwgtnode1(ista,ii,ideg) =     ampsens(ixindex,iyindex)
+                  ampwgtnode1(ista,ii,ideg) =  ampsens(ixindex,iyindex)
                 endif 
 
               else 
@@ -1111,12 +1130,13 @@
             dphase(ista,ideg) = 0.
             dampper(ista,ideg) = 0.
 
-!  corrections for second order effects of large velocity changes in version 587
-!   old version commented out
+            !  corrections for second order effects of large velocity changes 
+            !  in version 587 old version commented out
+
             do inode = 1, nnodes
-!          dphase(ista,ideg) = dphase(ista,ideg) &
-!        + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
-!                 *(appvel(inode)-unifvel)/unifvel
+              ! dphase(ista,ideg) = dphase(ista,ideg) &
+              !                + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
+              !                *(appvel(inode)-unifvel)/unifvel
               dphase(ista,ideg) = dphase(ista,ideg) &
                                + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
                                *(appvel(inode)-unifvel)/appvel(inode) &
@@ -1133,32 +1153,36 @@
                                    /(appvel(inode)/unifvel)
             enddo
 
-!  end loop over stations
  102      enddo  ! ista
+          !=== end loop over stations ===
 
-!  end loop over angles
  125    enddo
-!         write(*,*) iev, dphase(5,5),dampper(5,5)
+        !===  end loop over angles ===
 
-!  find best fitting wave parameters from grid search
+        !write(*,*) iev, dphase(5,5),dampper(5,5)
+
+
+        !  find best fitting wave parameters from grid search
         call search(pb)
 
-!      write(*,*)iev,pb(3)/convdeg,pb(4)/convdeg,pb(1),pb(2),pb(5),pb(6)
+        !write(*,*)iev,pb(3)/convdeg,pb(4)/convdeg,pb(1),pb(2),pb(5),pb(6)
 
-!  use best model as event starting model for linearized inversion
+        !  use best model as event starting model for linearized inversion
         ip = (iev-1)*6
         startamp1(iev) = pb(1)
         startamp2(iev) = pb(2)
-        stazim1(iev) = pb(3)
-        stazim2(iev) = pb(4)
-        stphase1(iev) = pb(5)
-        stphase2(iev) = pb(6)
+        stazim1(iev)   = pb(3)
+        stazim2(iev)   = pb(4)
+        stphase1(iev)  = pb(5)
+        stphase2(iev)  = pb(6)
+
         origmod(1+ip) = startamp1(iev)
         origmod(2+ip) = startamp2(iev)
         origmod(3+ip) = stazim1(iev)
         origmod(4+ip) = stazim2(iev)
         origmod(5+ip) = stphase1(iev)
         origmod(6+ip) = stphase2(iev)
+
         crrntmod(1+ip) = startamp1(iev)
         crrntmod(2+ip) = startamp2(iev)
         crrntmod(3+ip) = stazim1(iev)
@@ -1167,53 +1191,49 @@
         crrntmod(6+ip) = stphase2(iev)
 
 
-!  calculate partial derivatives for wave parameters
+        !  calculate partial derivatives for wave parameters
         ideg1 = int(stazim1(iev)/convdeg+(ndeg-1)/2+0.01) + 1
         ideg2 = int(stazim2(iev)/convdeg+(ndeg-1)/2+0.01) + 1
 
-!  calculate effect of uniform velocity for first plane wave
+        !  calculate effect of uniform velocity for first plane wave
         do 10 ista = 1, nsta(iev)
-          xstatemp = xsta(iev,ista)*cos(stazim1(iev)) &
+          xstatemp =   xsta(iev,ista)*cos(stazim1(iev)) &
                      + ysta(iev,ista)*sin(stazim1(iev))               
      
-!       ystatemp = 
-!     1  -xsta(iev,ista)*sin(stazim1(iev))
-!     1 + ysta(iev,ista)*cos(stazim1(iev))     
+          !ystatemp = -xsta(iev,ista)*sin(stazim1(iev)) &
+          !          + ysta(iev,ista)*cos(stazim1(iev))     
 
           dtime1(ista) = (xstatemp-xmin(iev,ideg1))/unifvel
-
   10    enddo
 
 
-!       calculate for second plane wave
+        !  calculate for second plane wave
 
         do 20 ista = 1, nsta(iev)
          
           xstatemp = xsta(iev,ista)*cos(stazim2(iev)) &
                    + ysta(iev,ista)*sin(stazim2(iev))               
      
-!       ystatemp = &
-!        -xsta(iev,ista)*sin(stazim2(iev)) &
-!       + ysta(iev,ista)*cos(stazim2(iev))     
+          !ystatemp = -xsta(iev,ista)*sin(stazim2(iev)) &
+          !          + ysta(iev,ista)*cos(stazim2(iev))     
 
           dtime2(ista) = (xstatemp-xmin(iev,ideg2))/unifvel
 
   20    enddo
    
-!  convert time to phase and assign effects of lateral heterogeneities
-
+        !  convert time to phase and assign effects of lateral heterogeneities
         do ista = 1, nsta(iev)
-
-          phase1(iev,ista) = dtime1(ista)*freq(1)
-          phase2(iev,ista) = dtime2(ista)*freq(1)
-          dphase1(iev,ista) =   dphase(ista,ideg1)
-          dphase2(iev,ista) =   dphase(ista,ideg2)  
+          phase1(iev,ista)   = dtime1(ista)*freq(1)
+          phase2(iev,ista)   = dtime2(ista)*freq(1)
+          dphase1(iev,ista)  = dphase(ista,ideg1)
+          dphase2(iev,ista)  = dphase(ista,ideg2)  
           damp1per(iev,ista) = dampper(ista,ideg1)
           damp2per(iev,ista) = dampper(ista,ideg2) 
         enddo
 
 
-! calculate the change of ph1,ph2, damp1,damp2 with respect to azimuth at the reference station 
+        !  calculate the change of ph1, ph2, damp1, damp2 with 
+        !  respect to azimuth at the reference station 
 
         aziminc1 = 2.*convdeg
         aziminc2 = 2.*convdeg
@@ -1231,6 +1251,7 @@
 !
 !       ideg1 = int(stazim1(iev)/convdeg+(ndeg-1)/2+0.01) + 1
 !       ideg2 = int(stazim2(iev)/convdeg+(ndeg-1)/2+0.01) + 1
+
         staziminc1 = stazim1(iev) + aziminc1
         staziminc2 = stazim2(iev) + aziminc2
 
@@ -1565,19 +1586,20 @@
           g(kimag,6+ip) = -startamp2(iev)*(1.0+damp2per(iev,ista))*cosph2 &
                              *twopi*atte2 &
                              *ampadj/stddevdata(iev)
-!  normalize by stddevdata
+        
+         !  normalize by stddevdata
         enddo  ! ista
 
         naddat = naddat + 2*nsta(iev)
       enddo
 
-!  calculate misfit before inversion
-	premisfit = 0.0
-	do i = 1, nobs
-	  premisfit = premisfit + d(i)*d(i)
-	enddo
-	premisrms = sqrt(premisfit/nobs)
-	write (*,*) "premisrms ", premisrms
+        !  calculate misfit before inversion
+        premisfit = 0.0
+        do i = 1, nobs
+          premisfit = premisfit + d(i)*d(i)
+        enddo
+        premisrms = sqrt(premisfit/nobs)
+        write (*,*) "premisrms ", premisrms
 
 !        write(*,*) "end loop over events for partial derivatives"
 
@@ -2550,7 +2572,7 @@
       end
 
       subroutine actlmsft(actmisrms)
-       parameter (maxnfreq=1, maxnsta=300, maxpts=20000, nparam = 4000, &
+      parameter (maxnfreq=1, maxnsta=300, maxpts=20000, nparam = 4000, &
                   maxnobs = 25000, maxnodes = 2000, maxevnts = 400, &
                   maxnxints = 401, maxnyints = 401,ndeg = 81 )
 
@@ -2590,7 +2612,7 @@
       integer*4 nsta(maxevnts), iref(maxevnts)
       integer*4 istanum(maxevnts,maxnsta),istacor(maxnsta)
       integer*4 idnode(maxnodes)
-      integer*4   istavar(maxnsta)
+      integer*4 istavar(maxnsta)
       integer*4 nxkern,nykern, nnodes
       integer*4 ityp1sta(maxnsta),ntyp1 
       integer*4 nevents
@@ -2607,196 +2629,200 @@
           startamp1,startamp2,stphase1,stphase2,stazim1,stazim2, &
           nevents,idnode,ideg1,ideg2,nobs,i6,iarea
 
-        twopi = 3.1415928*2.
-        onepi = 3.1415928
-        convdeg = 3.1415928/180.
-	actmisfit = 0.0
-       do iev = 1, nevents
-!   calculate the sensitivity kernel for fixed angles
+      twopi = 3.1415928*2.
+      onepi = 3.1415928
+      convdeg = 3.1415928/180.
+      actmisfit = 0.0
+      do iev = 1, nevents
+        !   calculate the sensitivity kernel for fixed angles
 
         do 125 idegg = 1,2
-	  if (idegg.eq.1) ideg = ideg1
-	  if (idegg.eq.2) ideg = ideg2
+          if (idegg.eq.1) ideg = ideg1
+          if (idegg.eq.2) ideg = ideg2
           azimt = ((ideg-1.) - (ndeg-1.)/2.)*convdeg
           cs2n = cos(2.0*(convdeg*bazi(iev,iref(iev))- azimt))
-	  sn2n = sin(2.0*(convdeg*bazi(iev,iref(iev))- azimt))
-	  cs1z = cos(azimt)
-	  sn1z = sin(azimt)
+          sn2n = sin(2.0*(convdeg*bazi(iev,iref(iev))- azimt))
+          cs1z = cos(azimt)
+          sn1z = sin(azimt)
 
           do ii = 1,nnodes
-! don't really need arrays here in this version, but used throughout so retained
+            !  don't really need arrays here in this version, 
+            !  but used throughout so retained
             cos2node(ii,ideg)=cs2n
             sin2node(ii,ideg)=sn2n
           enddo
 
-!  calculate current apparent velocity at each node
-
-        do ii = 1, nnodes
-          iii  = ii+i6
-          jjj  = i6+nnodes + idnode(ii)
-	  jjjj = jjj + iarea
-          appvel(ii) =       crrntmod(iii) &
-          + cos2node(ii,ideg)*crrntmod(jjj) &
-          + sin2node(ii,ideg)*crrntmod(jjjj)
-!       write(14,*) iev,ideg,ii, appvel(ii)
-        enddo
-
-!  loop over stations, generating sensitivity kernels for each
-        do 102 ista = 1, nsta(iev)
+          !  calculate current apparent velocity at each node
 
           do ii = 1, nnodes
-	      wgtnode1(ista,ii,ideg) = 0.0
-	    ampwgtnode1(ista,ii,ideg) = 0.0
+            iii  = ii+i6
+            jjj  = i6+nnodes + idnode(ii)
+            jjjj = jjj + iarea
+            appvel(ii) = crrntmod(iii) &
+                        + cos2node(ii,ideg)*crrntmod(jjj) &
+                        + sin2node(ii,ideg)*crrntmod(jjjj)
+            !write(14,*) iev,ideg,ii, appvel(ii)
           enddo
 
-          xstatemp =  &
-             xsta(iev,ista)*cs1z &
-             + ysta(iev,ista)*sn1z               
+          !  loop over stations, generating sensitivity kernels for each
+          do 102 ista = 1, nsta(iev)
+
+            do ii = 1, nnodes
+              wgtnode1(ista,ii,ideg) = 0.0
+              ampwgtnode1(ista,ii,ideg) = 0.0
+            enddo
+
+            xstatemp = xsta(iev,ista)*cs1z &
+                     + ysta(iev,ista)*sn1z               
      
-          ystatemp =  &
-             -xsta(iev,ista)*sn1z &
-             + ysta(iev,ista)*cs1z     
+            ystatemp = -xsta(iev,ista)*sn1z &
+                      + ysta(iev,ista)*cs1z     
 
-          do ii = 1,nnodes
+            do ii = 1,nnodes
 
-           xnodetemp =  &
-             xnode(iev,ii)*cs1z &
-             + ynode(iev,ii)*sn1z               
+              xnodetemp = xnode(iev,ii)*cs1z &
+                        + ynode(iev,ii)*sn1z               
      
-           ynodetemp =  &
-             -xnode(iev,ii)*sn1z &
-             + ynode(iev,ii)*cs1z     
+              ynodetemp =-xnode(iev,ii)*sn1z &
+                        + ynode(iev,ii)*cs1z     
 
 
-           xstanode = xnodetemp - xstatemp
-	   ystanode = ynodetemp - ystatemp
+              xstanode = xnodetemp - xstatemp
+              ystanode = ynodetemp - ystatemp
 
-!  find nearest point in sensitivity kernel - kernels should have been
-!  calculated with smoothing so that they represent sensitivity to nodal
-!  coefficient rather than velocity at point  - could interpolate, but 
-! this is sufficiently accurate if kernels on fine enough scale (i.e.,
-!  dxkern << smoothing length
-         if (xnodetemp.ge.xmin(iev,ideg)) then
-          if (xstanode.ge.0.0) then
-            ixindex = int( xstanode/dxkern +0.5) + (nxkern+1)/2
-	  else
-	    ixindex = int( xstanode/dxkern -0.5) + (nxkern+1)/2
-	  endif
-          if (ystanode.ge.0.0) then
-            iyindex = int( ystanode/dykern +0.5) + (nykern+1)/2
-	  else
-	    iyindex = int( ystanode/dykern -0.5) + (nykern+1)/2
-	  endif
+              !  find nearest point in sensitivity kernel - kernels should have been
+              !  calculated with smoothing so that they represent sensitivity to nodal
+              !  coefficient rather than velocity at point  - could interpolate, but 
+              ! this is sufficiently accurate if kernels on fine enough scale (i.e.,
+              !  dxkern << smoothing length
 
-          if(  ixindex .lt.1 .or. ixindex .gt. nxkern &
-           .or. iyindex .lt.1 .or. iyindex .gt. nxkern) then 
+              if (xnodetemp.ge.xmin(iev,ideg)) then
+           
+                if (xstanode.ge.0.0) then
+                  ixindex = int( xstanode/dxkern +0.5) + (nxkern+1)/2
+                else
+                  ixindex = int( xstanode/dxkern -0.5) + (nxkern+1)/2
+                endif
 
+                if (ystanode.ge.0.0) then
+                  iyindex = int( ystanode/dykern +0.5) + (nykern+1)/2
+                else
+                  iyindex = int( ystanode/dykern -0.5) + (nykern+1)/2
+                endif
 
-	    write(*,*) 'ixindex,iyindex,iev,ista,ideg',  &
-                   ixindex,iyindex,iev,ista,ideg
-	     wgtnode1(ista,ii,ideg)    = 0.
-	     ampwgtnode1(ista,ii,ideg) = 0.  
-
- 	   else
-
-             wgtnode1(ista,ii,ideg) = sensitivity(ixindex,iyindex)
-             ampwgtnode1(ista,ii,ideg) =     ampsens(ixindex,iyindex)
-           endif 
-	  else 
-	     wgtnode1(ista,ii,ideg)    = 0.
-	     ampwgtnode1(ista,ii,ideg) = 0.  
-           endif	   
-          enddo
-
-	 dphase(ista,ideg) = 0.
-         dampper(ista,ideg) = 0.
-!  corrections for second order effects of large velocity changes in version 587
-!   old version commented out
-          do inode = 1, nnodes
-!          dphase(ista,ideg) = dphase(ista,ideg) 
-!     1  + (1.0/twopi)*wgtnode1(ista,inode,ideg)
-!     1           *(appvel(inode)-unifvel)/unifvel
-          dphase(ista,ideg) = dphase(ista,ideg)  &
-         + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
-                  *(appvel(inode)-unifvel)/appvel(inode) &
-                  /(appvel(inode)/unifvel)
-
-          enddo
+                if(ixindex .lt.1 .or. ixindex .gt. nxkern &
+                  .or. iyindex .lt.1 .or. iyindex .gt. nxkern) then 
 
 
-	  do inode =1, nnodes
-          dampper(ista,ideg) = dampper(ista,ideg)  &
-         + ampwgtnode1(ista,inode,ideg) * &
-!     1   (appvel(inode)-unifvel)/unifvel &
-           (appvel(inode)-unifvel)/appvel(inode) &
-                  /(appvel(inode)/unifvel)
+                  write(*,*) 'ixindex,iyindex,iev,ista,ideg',  &
+                              ixindex,iyindex,iev,ista,ideg
+             
+                  wgtnode1(ista,ii,ideg)    = 0.
+                  ampwgtnode1(ista,ii,ideg) = 0.  
 
-          enddo
+                else
 
-!  end loop over stations
- 102 	  enddo
-!  end loop over angles
- 125     enddo
+                  wgtnode1(ista,ii,ideg) =    sensitivity(ixindex,iyindex)
+                  ampwgtnode1(ista,ii,ideg) =     ampsens(ixindex,iyindex)
+                endif
 
-!  calculate effect of uniform velocity for first plane wave
-       do 10 ista = 1, nsta(iev)
-       xstatemp =  &
-          xsta(iev,ista)*cos(stazim1(iev)) &
-        + ysta(iev,ista)*sin(stazim1(iev))               
+              else 
+                wgtnode1(ista,ii,ideg)    = 0.
+                ampwgtnode1(ista,ii,ideg) = 0.  
+              endif         
+            enddo
+
+            dphase(ista,ideg) = 0.
+            dampper(ista,ideg) = 0.
+
+            !  corrections for second order effects of large velocity 
+            !  changes in version 587 old version commented out
+            do inode = 1, nnodes
+              !dphase(ista,ideg) = dphase(ista,ideg) & 
+              !        + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
+              !        *(appvel(inode)-unifvel)/unifvel
+              dphase(ista,ideg) = dphase(ista,ideg)  &
+                      + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
+                      *(appvel(inode)-unifvel)/appvel(inode) &
+                      /(appvel(inode)/unifvel)
+
+            enddo
+
+
+            do inode =1, nnodes
+              dampper(ista,ideg) = dampper(ista,ideg)  &
+                       + ampwgtnode1(ista,inode,ideg)  &
+                !      (appvel(inode)-unifvel)/unifvel &
+                       *(appvel(inode)-unifvel)/appvel(inode) &
+                       /(appvel(inode)/unifvel)
+
+            enddo
+
+ 102      enddo
+          !=== end loop over stations
+       
+ 125    enddo
+        !=== end loop over angles
+
+        !  calculate effect of uniform velocity for first plane wave
+        do 10 ista = 1, nsta(iev)
+          xstatemp =  xsta(iev,ista)*cos(stazim1(iev)) &
+                    + ysta(iev,ista)*sin(stazim1(iev))               
      
-   	dtime1(ista) = (xstatemp-xmin(iev,ideg1))/unifvel
+          dtime1(ista) = (xstatemp-xmin(iev,ideg1))/unifvel
 
-  10 	  enddo
+  10    enddo
 
-!       calculate for second plane wave
+
+        !  calculate for second plane wave
   
         do 20 ista = 1, nsta(iev)
          
-       xstatemp =  &
-          xsta(iev,ista)*cos(stazim2(iev)) &
-        + ysta(iev,ista)*sin(stazim2(iev))               
+          xstatemp = xsta(iev,ista)*cos(stazim2(iev)) &
+                   + ysta(iev,ista)*sin(stazim2(iev))               
      
-   	dtime2(ista) = (xstatemp-xmin(iev,ideg2))/unifvel
+          dtime2(ista) = (xstatemp-xmin(iev,ideg2))/unifvel
 
-	   phase1(ista) = dtime1(ista)*freq(1)
-	   phase2(ista) = dtime2(ista)*freq(1)
-	  dphase1(ista) =   dphase(ista,ideg1)
-	  dphase2(ista) =   dphase(ista,ideg2)  
+          phase1(ista)  =   dtime1(ista)*freq(1)
+          phase2(ista)  =   dtime2(ista)*freq(1)
+          dphase1(ista) =   dphase(ista,ideg1)
+          dphase2(ista) =   dphase(ista,ideg2)  
           damp1per(ista) = dampper(ista,ideg1)
-	  damp2per(ista) = dampper(ista,ideg2) 
+          damp2per(ista) = dampper(ista,ideg2) 
 
   20    enddo
+
    
-!  convert time to phase and assign effects of lateral heterogeneities
+        !  convert time to phase and assign effects of lateral heterogeneities
 
         do ista = 1, nsta(iev)
 
+          prefase1 = ( (phase1(ista)+dphase1(ista)) &
+                     - (phase1(iref(iev))+dphase1(iref(iev)))) &
+                     + stphase1(iev)
+      
+          prefase2 = ( (phase2(ista)+dphase2(ista)) &
+                     - (phase2(iref(iev))+dphase2(iref(iev)))) &
+                     + stphase2(iev)
 
-        prefase1 = ( (phase1(ista)+dphase1(ista)) &
-         - (phase1(iref(iev))+dphase1(iref(iev)))) &
-                    + stphase1(iev)
-        prefase2 = ( (phase2(ista)+dphase2(ista)) &
-         - (phase2(iref(iev))+dphase2(iref(iev)))) &
-                    + stphase2(iev)
-
-	  staamp1 = startamp1(iev)*(1.+damp1per(ista))
-	  staamp2 = startamp2(iev)*(1.+damp2per(ista))
+          staamp1 = startamp1(iev)*(1.+damp1per(ista))
+          staamp2 = startamp2(iev)*(1.+damp2per(ista))
 
 !        parph1cor1=0.                                        
 !        parph2cor1=0.                                        
-	 
-	 if (ntyp1.ne.0) then
-!         itypst2=0 
-        do itypst=1, ntyp1                                    
-         if (istanum(iev,ista).eq.ityp1sta(itypst)) then     
-          prefase1=prefase1+phcor(itypst)                    
-          prefase2=prefase2+phcor(itypst)                    
-!          parph1cor1=1.                                      
-!          parph2cor1=1.                                      
-!	  itypst2=itypst                                     
-	 endif                                               
-        enddo 
-	endif                                               
+       
+          if (ntyp1.ne.0) then
+!           itypst2=0 
+            do itypst=1, ntyp1                                    
+              if (istanum(iev,ista).eq.ityp1sta(itypst)) then     
+                prefase1=prefase1+phcor(itypst)                    
+                prefase2=prefase2+phcor(itypst)                    
+!                parph1cor1=1.                                      
+!                parph2cor1=1.                                      
+!	         itypst2=itypst                                     
+              endif                                               
+            enddo 
+          endif                                               
 
 
           cosph1 = cos(prefase1*twopi)
@@ -2805,41 +2831,41 @@
           sinph2 = sin(prefase2*twopi)
           
           prereal = staamp1*cosph1+staamp2*cosph2
-!	  write(*,*) prereal  
-	  preimag = -1.0*(staamp1*sinph1+ staamp2*sinph2)
-!           write(*,*) ampmult(istavar(istanum(iev,ista)))
+!	   write(*,*) prereal  
+          preimag = -1.0*(staamp1*sinph1+ staamp2*sinph2)
+!          write(*,*) ampmult(istavar(istanum(iev,ista)))
           prereal = prereal*ampmult(istavar(istanum(iev,ista))) &
-                 *exp(-gamma*xsta(iev,ista))
+                    *exp(-gamma*xsta(iev,ista))
 !          write(*,*) prereal
           preimag = preimag*ampmult(istavar(istanum(iev,ista))) &
-                     *exp(-gamma*xsta(iev,ista))
+                    *exp(-gamma*xsta(iev,ista))
 
 
 
-
-!  data vector and partial derivatives listed event by event with all
-!  real data for first event followed by imaginary data, then onto next event
-!  d contains misfit to starting model
+          !  data vector and partial derivatives listed event by event with all
+          !  real data for first event followed by imaginary data, then onto next event
+          !  d contains misfit to starting model
 
 
 !          kreal = ista + naddat
 !          kimag = kreal + nsta(iev)
           dkreal = (streal(iev,ista,ifreq) - prereal)/stddevdata(iev)
           dkimag = (stimag(iev,ista,ifreq) - preimag)/stddevdata(iev)
-	  write(14,*) iev,ista,streal(iev,ista,ifreq),stimag(iev,ista,ifreq), &
+          write(14,*) iev,ista,streal(iev,ista,ifreq),stimag(iev,ista,ifreq), &
                prereal,preimag
           actmisfit = actmisfit + dkreal*dkreal+dkimag*dkimag
-         enddo
-!	 write(*,*) iev, ' stddevdata ',stddevdata(iev),' actmisfit ', actmisfit 
         enddo
-	actmisrms = sqrt(actmisfit/nobs)
-!	write(*,*) 'nobs ', nobs, ' ifreq ', ifreq,' unifvel ',unifvel
-	return
-	end
-	
-	
-	
-      subroutine genreggrid(freggrid,ntot,nxpt,dx,dy)
+!	 write(*,*) iev, ' stddevdata ',stddevdata(iev),' actmisfit ', actmisfit 
+      enddo
+
+      actmisrms = sqrt(actmisfit/nobs)
+!      write(*,*) 'nobs ', nobs, ' ifreq ', ifreq,' unifvel ',unifvel
+      
+      return
+      end
+      
+      
+      
 !***************************************************************************
 !*   Create regularly spaced grid points in an area with center point (slat,slon). *
 !*   In order to avoid distortion at high latitude, change coordinates so   *
@@ -2847,68 +2873,82 @@
 !*   compensation for curvature.                                           *
 !*************************************************************************** 
 !  WARNING   checkout scheme by running separately first gridreg < brwestreginp.dat
-       parameter (nxptmx=100, nyptmx=100)
-       parameter (maxnodes = 2000)
 
-       real*4 dazim(nxptmx),ddelt(nyptmx),glat(nxptmx,nyptmx)
-       real*4 glon(nxptmx,nyptmx)
-      real*4 boxlat(4), boxlon(4)
-      real*4 nodelat(maxnodes),nodelon(maxnodes)
-       character*70 freggrid
-       common /gengrid/ nodelat,nodelon,boxlat,boxlon
-       open(15, file = freggrid, status = 'unknown')
-       radius = 6371.
-       pi = 3.14158
-       convdeg = 2.0*pi/360.
-!   'Enter the center point (slat, slon):'
-       read(15,*) slat,slon
-       sdelta=90.
-!      sazimz is azimuth from the center point that will tilt grid relative to North
-       read(15,*) sazimz
-!  delx is increment in degrees at equator - the true increment will vary with latitude from
-!  equator of projection
-       read(15,*) nxpt, delx,begx
-! to follow our traditional convention of listing points from right to left and bottom to top.
-!  the degree increment for distance from the pole, dely, should be negative and the
-!  beginning point should be farthest in degrees from projection pole (assuming sazimz is
-!  northwards), (e.g., begy = 6 (degrees south of center point) is 96 degrees from pole)
-!  begx would be negative and increase with positive delx
-       read(15,*) nypt,dely, begy
-! read in corners for wave intercepts to pass along to main program
-       do i = 1, 4
-         read(15, *) boxlat(i), boxlon(i)	
-       enddo
-       degdist = 2.0*pi*radius/360.
-       dx = delx*degdist
-       dy = dely*degdist
-       call gohead(slat,slon,sdelta,sazimz,plat,plon)
-       call disthead(plat,plon,slat,slon,delta,azimz)
-       ntot = nxpt*nypt
-       do 150 j=1,nypt
-         delyinc = (j-1)*dely +begy	 
-         delt = delta + delyinc	 
-         do 100 i=1,nxpt
-	   azim = azimz + (begx + (i-1)*delx)/cos(convdeg*delyinc)
-	   call gohead(plat,plon,delt,azim,glat(i,j),glon(i,j))
-	   if (glon(i,j).gt.180.0) then
-	     glon(i,j) = glon(i,j) - 360.0
-	   endif
-  100	 enddo
-  150  enddo 
-!  arrange points in standard order in single dimensioned arrays
-       nodecnt = 0
-       do i = 1, nxpt
-         do j = 1, nypt
-	   nodecnt = nodecnt + 1
-           nodelat(nodecnt) = glat(i,j)
-	   nodelon(nodecnt) = glon(i,j)
-	 enddo
-       enddo
-       close(15)  
-  200  format(f7.3,f10.3)
-       return
-       end  
+      subroutine genreggrid(freggrid,ntot,nxpt,dx,dy)
+        parameter (nxptmx=100, nyptmx=100)
+        parameter (maxnodes = 2000)
+
+        real*4 dazim(nxptmx),ddelt(nyptmx),glat(nxptmx,nyptmx)
+        real*4 glon(nxptmx,nyptmx)
+        real*4 boxlat(4), boxlon(4)
+        real*4 nodelat(maxnodes),nodelon(maxnodes)
+        character*70 freggrid
+        common /gengrid/ nodelat,nodelon,boxlat,boxlon
        
+        open(15, file = freggrid, status = 'unknown')
+        
+        radius = 6371.
+        pi = 3.14158
+        convdeg = 2.0*pi/360.
+
+        !  'Enter the center point (slat, slon):'
+        read(15,*) slat,slon
+        sdelta=90.
+        !  sazimz is azimuth from the center point that will tilt grid relative to North
+        read(15,*) sazimz
+
+        !  delx is increment in degrees at equator - the true increment will vary with latitude from
+        !  equator of projection
+        read(15,*) nxpt, delx,begx
+
+        !  to follow our traditional convention of listing points from right to left and bottom to top.
+        !  the degree increment for distance from the pole, dely, should be negative and the
+        !  beginning point should be farthest in degrees from projection pole (assuming sazimz is
+        !  northwards), (e.g., begy = 6 (degrees south of center point) is 96 degrees from pole)
+        !  begx would be negative and increase with positive delx
+        read(15,*) nypt,dely, begy
+        
+        ! read in corners for wave intercepts to pass along to main program
+        do i = 1, 4
+          read(15, *) boxlat(i), boxlon(i)    
+        enddo
+
+        degdist = 2.0*pi*radius/360.
+        dx = delx*degdist
+        dy = dely*degdist
+        call gohead(slat,slon,sdelta,sazimz,plat,plon)
+        call disthead(plat,plon,slat,slon,delta,azimz)
+       
+        ntot = nxpt*nypt
+        do 150 j=1,nypt
+          delyinc = (j-1)*dely +begy   
+          delt = delta + delyinc       
+          
+          do 100 i=1,nxpt
+            azim = azimz + (begx + (i-1)*delx)/cos(convdeg*delyinc)
+            call gohead(plat,plon,delt,azim,glat(i,j),glon(i,j))
+            if (glon(i,j).gt.180.0) then
+              glon(i,j) = glon(i,j) - 360.0
+            endif
+  100     enddo
+  150   enddo
+
+        !  arrange points in standard order in single dimensioned arrays
+        nodecnt = 0
+        do i = 1, nxpt
+          do j = 1, nypt
+            nodecnt = nodecnt + 1
+            nodelat(nodecnt) = glat(i,j)
+            nodelon(nodecnt) = glon(i,j)
+          enddo
+        enddo
+        close(15)
+
+  200   format(f7.3,f10.3)
+        return
+      end  
+       
+
        
       subroutine assignstrt(startvel,nodevel,preunifvel,ntot, &
                                   nxpt,dxnode,dynode)
