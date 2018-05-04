@@ -114,7 +114,7 @@
       real*4 damp1per(maxevnts,maxnsta), damp2per(maxevnts,maxnsta)
       real*4 dphase1(maxevnts,maxnsta),dphase2(maxevnts,maxnsta)
       real*4 phase1(maxevnts,maxnsta), phase2(maxevnts,maxnsta)
-      real*4 phase(maxnsta,ndeg),dphase(maxnsta,ndeg), 
+      real*4 phase(maxnsta,ndeg),dphase(maxnsta,ndeg)
       real*4 dampper(maxnsta,ndeg)
       real*4 unifvel,ampmult(maxnsta)
       real*4 dxnode,dynode,xbegkern,dxkern
@@ -284,7 +284,7 @@
       open(10, file = foutput)
       print *, "bp 1d"
       open(11, file = fsummary)
-      open(12, file = fftinput)
+      open(12, file = fftinput) !?
       open(13, file = ftemp)
       open(14, file = "followit12")
       open(16, file = fvariance)
@@ -552,7 +552,7 @@
         enddo
       enddo
 
-      write (*,*) 'done with sensitivity'11111
+      write (*,*) 'done with sensitivity'
 
       ! assign velocities to each grid node apriori
       write(*,*) 'bp 5a'
@@ -1899,20 +1899,22 @@
 
           naddat = naddat + 2*nsta(iev)
 
-	write(10,*) 'iev', idnum(iev),'  sigma2 ',sigma2,  'rmsph ',rmsph
-	write(10,*) stazim1(iev)/convdeg,startamp1(iev),stphase1(iev)
-	write(10,*) stazim2(iev)/convdeg,startamp2(iev),stphase2(iev)
+        write(10,*) 'iev', idnum(iev),'  sigma2 ',sigma2,  'rmsph ',rmsph
+        write(10,*) stazim1(iev)/convdeg,startamp1(iev),stphase1(iev)
+        write(10,*) stazim2(iev)/convdeg,startamp2(iev),stphase2(iev)
 
         enddo
 
-!  update node coefficients and calculate average isotropic velocity
-	avgvel = 0.0
+        !  update node coefficients and calculate average isotropic velocity
+        avgvel = 0.0
         do ii = 1, nnodes
           crrntmod(ii+i6) = crrntmod(ii+i6) + change(ii+i6)
-	  avgvel = avgvel + crrntmod(ii+i6)
+          avgvel = avgvel + crrntmod(ii+i6)
         enddo
-	avgvel = avgvel/nnodes
-	write(*,*) "avgvel ",avgvel
+
+        avgvel = avgvel/nnodes
+        write(*,*) "avgvel ",avgvel
+        
         do ii = 1, iarea
           iii = ii+i6 + nnodes
           iiii = iii+iarea
@@ -1943,35 +1945,44 @@
            write(*,*)"phcor ",ii, ityp1sta(ii), phcor(ii)      
         enddo                                                   
         endif
-	
+        
         gamma = gamma + change(np)
         crrntmod(np) = gamma
-	
-!  Calculate predicted effect of change in model parameters and compare to actual effect
+        
+        !  Calculate predicted effect of change in model 
+        !  parameters and compare to actual effect
         predmis = 0.0
         do ic = 1, nobs
-	  gchange(ic) = 0.0
-	  do jc = i6+1,np
-	    gchange(ic) = gchange(ic) + g(ic,jc)*change(jc)
-	  enddo
-	  predmis = predmis + (d(ic)-gchange(ic))**2
-	enddo
-	predmisrms = sqrt(predmis/nobs)
-	write (*,*) "predmisrms ",predmisrms
+          gchange(ic) = 0.0
+
+          do jc = i6+1,np
+            gchange(ic) = gchange(ic) + g(ic,jc)*change(jc)
+          enddo
+
+          predmis = predmis + (d(ic)-gchange(ic))**2
+        enddo
+
+        predmisrms = sqrt(predmis/nobs)
+        write (*,*) "predmisrms ",predmisrms
+
 !	call actlmsft(actmisrms)
-!  subroutine setup for integer values of azimuths only - don't call - just for debugging
-!   anyway to check for non-linearity		
+!       subroutine setup for integer values of azimuths only 
+!       - don't call - just for debugging
+!       anyway to check for non-linearity		
 !	write(*,*) "predmisrms ",predmisrms," actmisrms ",actmisrms
 
 !   Find maximum change to model (well, to velocity
 !   parameters anyway) to test for convergence 
         chmax = 0.0
+
         do ii = 1,nnodes
           ip = i6 + ii
           chmax = dmax1(chmax, dabs(change(ip)))
         enddo
+
         write(*,*) icnt, chmax
         icnt = icnt +1
+
 !  calculate misfit after inversion
 !  *******************************************
 !  test for convergence and finish iteration
@@ -2018,75 +2029,85 @@
            go to 100
          endif
 
-!  By the time this converges to a solution, d should contain the normalized 
-!  misfits
-!  Calculate sigma**2 and standard deviation of model parameters
-!  Problem with this again with too many parameters - calculate rms instead
-!  or use sigma**2 = 1
+        !  By the time this converges to a solution, d should contain the 
+        !  normalized misfits
+        !  Calculate sigma**2 and standard deviation of model parameters
+        !  Problem with this again with too many parameters - calculate rms instead
+        !  or use sigma**2 = 1
         sumsq = 0.0
         naddat = 0
         totsumsqph  = 0.0
-	totsumsqamp = 0.0
+        totsumsqamp = 0.0
+
         do iev = 1, nevents
           write(10,*) 'event ', idnum(iev)
           sumsqph  = 0.0
-	  sumsqamp =  0.
-	  sumsqtemp = 0.0
+          sumsqamp =  0.
+          sumsqtemp = 0.0
           do ista = 1,nsta(iev)
             dresid1=d(ista+naddat)*stddevdata(iev)
             dresid2=d(ista+naddat+nsta(iev))*stddevdata(iev)
-!  convert misfits back to original amplitude and phase
+            
+            !  convert misfits back to original amplitude and phase
             predamp = amprms(iev,ifreq) &
                *sqrt((streal(iev,ista,ifreq)-dresid1)**2  &
                        + (stimag(iev,ista,ifreq)-dresid2)**2)
             prefase = atan2(-(stimag(iev,ista,ifreq)-dresid2), &
                        (streal(iev,ista,ifreq)-dresid1))/twopi
-! check for prefase being off by twopi
+           
+           !  check for prefase being off by twopi
            absmis = abs(prefase - dph(iev,ista))
-	   phasemis = absmis - int(absmis)	   
+           phasemis = absmis - int(absmis)       
+           
            if (phasemis.gt.0.5) phasemis = phasemis-1.0
+           
            write(10,*) ista, streal(iev,ista,ifreq),dresid1, &
-                           stimag(iev,ista,ifreq), dresid2, &
-                staamp(iev,ista,ifreq), predamp, dph(iev,ista), prefase
+                       stimag(iev,ista,ifreq), dresid2, &
+                       staamp(iev,ista,ifreq), predamp, &
+                       dph(iev,ista), prefase
 
            sumsq = sumsq+(d(ista+naddat)**2+d(ista+naddat+nsta(iev))**2) &
-                      *stddevdata(iev)**2
+                   *stddevdata(iev)**2
+
            sumsqtemp = sumsqtemp+(d(ista+naddat)**2+ &
-                        d(ista+naddat+nsta(iev))**2) &
-                      *stddevdata(iev)**2
+                       d(ista+naddat+nsta(iev))**2) &
+                       *stddevdata(iev)**2
 
            sumsqph = sumsqph + phasemis**2
-	   sumsqamp = sumsqamp + ((predamp-staamp(iev,ista,ifreq)) &
+           sumsqamp = sumsqamp + ((predamp-staamp(iev,ista,ifreq)) &
                                   /amprms(iev,ifreq))**2
 
           enddo
+
           totsumsqph = totsumsqph + sumsqph/freq(ifreq)**2
-	  totsumsqamp = totsumsqamp + sumsqamp
+          totsumsqamp = totsumsqamp + sumsqamp
           rmsphase(iev) = sqrt(sumsqph/nsta(iev))/freq(ifreq)
-	  rmsamp(iev)   = sqrt(sumsqamp/nsta(iev))
-	  rmsdata(iev) = sqrt(sumsqtemp/(2*nsta(iev)))
+          rmsamp(iev)   = sqrt(sumsqamp/nsta(iev))
+          rmsdata(iev) = sqrt(sumsqtemp/(2*nsta(iev)))
           naddat = naddat + 2*nsta(iev)
         enddo
+
 !  rmsph multiplied by 2 because only half the number of observations
         rmsph = sqrt(2.*totsumsqph/nobs)
-	rmsamplitude = sqrt(2.*totsumsqamp/nobs)
+        rmsamplitude = sqrt(2.*totsumsqamp/nobs)
         sigma2 = sqrt(sumsq/nobs)
+
 !        do j = 1, npsub
 !          stddev(j+i6) = sqrt(subgtginv(j,j))
         do j = 1, np
           stddev(j) = sqrt(gtginv(j,j))
         enddo
 
-!  Calculate resolution matrix for isotropic velocity parameters
+        !  Calculate resolution matrix for isotropic velocity parameters
         do i1 = i6+1,i6+nnodes
-	  do i2 = i6+1,i6+nnodes
-	    resparm =0.0
-	    do j = 1, np
+          do i2 = i6+1,i6+nnodes
+            resparm =0.0
+            do j = 1, np
               resparm = resparm + gtginv(i1,j)*savegtg(j,i2)
             enddo
-	    isores(i1-i6,i2-i6) = resparm
-	  enddo
-	enddo  
+            isores(i1-i6,i2-i6) = resparm
+          enddo
+        enddo  
 
         write(10,*) 'nobs',nobs, 'rank', rank, '  &
              rank from isovel params ', rank2
@@ -2104,16 +2125,19 @@
             ' unnormalized rms misfit', rmsph, 'rms phase misfit,  s', &
                '  rms amp mistfit   ', rmsamplitude
 
-! find median event rms phase misfit
+        !  find median event rms phase misfit
         imed1 = (nevents+1)/2
         imed2 = (nevents+2)/2
         do iev = 1, nevents
            sortrms(iev) = rmsphase(iev)
         enddo
+
         call shell(nevents, sortrms)
+
         rmsmedian = (sortrms(imed1)+sortrms(imed2))/2.0
         write(10,*) 'median event misfit', rmsmedian
         write(11,*) 'median event misfit', rmsmedian
+        
         do iev = 1, nevents
           ip = (iev-1)*6
           write(10,*) 'event ', idnum(iev), rmsdata(iev),  &
@@ -2133,47 +2157,52 @@
           write(11,*) wvaz2,startamp2(iev), stphase2(iev)
         enddo
 
-!   write parameter covariance matrix for isotropic velocity parameters
-!   for use in calculating variance of velocity model.  Could be smart and
-!   write only upper or lower triangle of symmetric matrix to save space.
+        !   write parameter covariance matrix for isotropic velocity parameters
+        !   for use in calculating variance of velocity model.  Could be smart and
+        !   write only upper or lower triangle of symmetric matrix to save space.
 
         write(16,*) nnodes
-	do ii = 1, nnodes
+        do ii = 1, nnodes
           do jj = 1, nnodes
 !	    write(16,*) subgtginv(ii,jj)
-	    write(16,*) gtginv(ii+i6,jj+i6)
-	    covar(ii,jj) = gtginv(ii+i6,jj+i6)
+            write(16,*) gtginv(ii+i6,jj+i6)
+            covar(ii,jj) = gtginv(ii+i6,jj+i6)
           enddo
         enddo
 
-!  write resolution matrix for isotropic velocity parameters
+        !  write resolution matrix for isotropic velocity parameters
         write(17,*) nnodes
-	do ii = 1, nnodes
-	  write(17,*) ii
-	  write(17,*) (isores(ii,jj), jj=1,nnodes)
-	enddo
-	  
         do ii = 1, nnodes
-          write(10,*) ii, crrntmod(ii+i6), stddev(ii+i6),residdiag(ii), &
-                 nodelon(ii),nodelat(ii)
-          write(11,*) ii, crrntmod(ii+i6), stddev(ii+i6),residdiag(ii), &
-                 nodelon(ii),nodelat(ii)
-	  vchange(ii) = crrntmod(ii+i6) - nodevel(ii)
-!          write(30,*) ii,nodelon(ii),nodelat(ii), 
-!     1              crrntmod(ii+i6),stddev(ii+i6),vchange(ii)
+          write(17,*) ii
+          write(17,*) (isores(ii,jj), jj=1,nnodes)
         enddo
+          
+        do ii = 1, nnodes
+          write(10,*) ii, crrntmod(ii+i6),stddev(ii+i6),residdiag(ii), &
+                      nodelon(ii),nodelat(ii)
+
+          write(11,*) ii, crrntmod(ii+i6),stddev(ii+i6),residdiag(ii), &
+                      nodelon(ii),nodelat(ii)
+
+          vchange(ii) = crrntmod(ii+i6) - nodevel(ii)
+!          write(30,*) ii,nodelon(ii),nodelat(ii), & 
+!                   crrntmod(ii+i6),stddev(ii+i6),vchange(ii)
+        enddo
+
         write(30,*) nnodes
+
         do ii = 1, iarea
-           iii= i6 + nnodes +ii
-           iiii = iii+iarea
-           write(10,*) crrntmod(iii),stddev(iii), crrntmod(iiii), &
-                          stddev(iiii), nodelon(ii),nodelat(ii)
-           write(11,*) crrntmod(iii),stddev(iii), crrntmod(iiii), &
-                          stddev(iiii), nodelon(ii),nodelat(ii)
-           write(30,1276) nodelon(ii),nodelat(ii),  &
-               crrntmod(iii),stddev(iii), crrntmod(iiii),stddev(iiii)
-	enddo
+          iii= i6 + nnodes +ii
+          iiii = iii+iarea
+          write(10,*) crrntmod(iii),stddev(iii), crrntmod(iiii), &
+                      stddev(iiii), nodelon(ii),nodelat(ii)
+          write(11,*) crrntmod(iii),stddev(iii), crrntmod(iiii), &
+                      stddev(iiii), nodelon(ii),nodelat(ii)
+          write(30,1276) nodelon(ii),nodelat(ii),crrntmod(iii), &
+                      stddev(iii), crrntmod(iiii),stddev(iiii)
+        enddo
 1276    format(f9.3,f8.3,4(f8.4))
+
         jcnt = 0
         do ii = 1,mxnsta
           if (nevntsta(ii).gt.0) then
@@ -2183,31 +2212,36 @@
             write(11,*) ii, ampmult(jcnt), stddev(ip),' ', staname(ii)
           endif
         enddo
-	if (ntyp1.ne.0) then
- 	write (10,*) 'station phase corrections'
- 	write (11,*) 'station phase corrections'
-         do ii=1, ntyp1                                                      
-           ip=npp+ii                                                         
-           write(10,*) ii, ityp1sta(ii),phcor(ii), stddev(ip)                
-           write(11,*) ii, ityp1sta(ii),phcor(ii), stddev(ip)                
-        enddo 
-	endif                                                               
-	write(10,*) 'attenuation correction'
-	write(11,*) 'attenuation correction'
+
+        if (ntyp1.ne.0) then
+          write (10,*) 'station phase corrections'
+          write (11,*) 'station phase corrections'
+          
+          do ii=1, ntyp1
+            ip=npp+ii
+            write(10,*) ii, ityp1sta(ii),phcor(ii), stddev(ip)
+            write(11,*) ii, ityp1sta(ii),phcor(ii), stddev(ip)
+          enddo
+
+        endif
+
+        write(10,*) 'attenuation correction'
+        write(11,*) 'attenuation correction'
         write(10,*) gamma, stddev(np)  
         write(11,*) gamma, stddev(np)
 
-	do ii = 1, nnodes
+        do ii = 1, nnodes
 !	  write(20,*) nodelon(ii),nodelat(ii), residrow(ii)
-	  write(21,*) nodelon(ii),nodelat(ii),residdiag(ii)
-	enddo
-!  change predicted phase velocities from a priori model to new results on
-!  same grid as a priori model
+          write(21,*) nodelon(ii),nodelat(ii),residdiag(ii)
+        enddo
+
+        !  change predicted phase velocities from a priori model to 
+        !  new results on same grid as a priori model
         
-	call updateapri(fendvel,unifvel,preunifvel,dampvel,nnodes)
-	
+        call updateapri(fendvel,unifvel,preunifvel,dampvel,nnodes)
+        
       enddo
-!  end loop over frequencies, which is silly since nfreq should always = 1
+      !===  end loop over frequencies, which is silly since nfreq should always = 1
 
 900   close(unit = 10)
       close(unit = 11)
@@ -2226,6 +2260,8 @@
 
       stop 
       end
+
+      !=== End of main program ===
 
 
       SUBROUTINE dlubksb(a,n,np,indx,b)
