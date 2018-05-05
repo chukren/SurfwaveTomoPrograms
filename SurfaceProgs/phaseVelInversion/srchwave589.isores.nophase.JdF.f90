@@ -146,13 +146,15 @@
       
       real*8 sensitivity(maxnxints,maxnyints)
       real*8 ampsens(maxnxints,maxnyints)
-      real*4 amsens(maxnxints,maxnyints),phsens(maxnxints,maxnyints)
+      real*8 amsens(maxnxints,maxnyints),phsens(maxnxints,maxnyints)
       real*4 kk,lamda
       real*4 amplitude(mxfreqkern), freqkern(mxfreqkern)
       
       ! Add by YYR for Q kernels 
-      real*4 kern_am2qinv(maxnxints,maxnyints) 
-      real*4 kern_ph2qinv(maxnxints,maxnyints)
+      real*8 kern_am2qinv(maxnxints,maxnyints) 
+      real*8 kern_ph2qinv(maxnxints,maxnyints)
+      real*8 am2qinv_sens(maxnxints,maxnyints) 
+      real*8 ph2qinv_sens(maxnxints,maxnyints)
       real*4 freq_ref, kern_Qfactor, kern_phi, kern_denom
       real*4 ph2phsv, am2phsv
       real*4 qinv, grpvel
@@ -188,7 +190,8 @@
            unifvel,appvel,ampmult,gamma, &
            xnode, ynode,wgtnode1,ampwgtnode1,xmin, &
            phase,dphase,dampper,istavar,istanum,nxkern,nykern, &
-           ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes
+           ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes, &
+           ph2qinv_sens, am2qinv_sens
 
       common /msft/ bazi,cos2node,sin2node,crrntmod, &
            startamp1,startamp2,stphase1,stphase2,stazim1,stazim2, &
@@ -433,6 +436,9 @@
 
           sensitivity(ixkern,iykern) = 0.
           ampsens(ixkern,iykern) = 0.
+
+          am2qinv_sens(ixkern,iykern) = 0.0
+          ph2qinv_sens(ixkern,iykern) = 0.0
         enddo
       enddo
 
@@ -528,15 +534,25 @@
 
                 sensitivity(ixkern,iykern) = sensitivity(ixkern,iykern) &
                                   + phsens(ix,iy)*wgtkern
+
                 ampsens(ixkern,iykern) = ampsens(ixkern,iykern) &
                                   + amsens(ix,iy)*wgtkern
         
+                ph2qinv_sens(ixkern,iykern) = ph2qinv_sens(ixkern,iykern) &
+                                  + kern_ph2qinv(ix,iy)*wgtkern
+
+                am2qinv_sens(ixkern,iykern) = am2qinv_sens(ixkern,iykern) &
+                                  + kern_am2qinv(ix,iy)*wgtkern
+
                 wgtsum = wgtsum+wgtkern
               enddo
             enddo
 
-            sensitivity(ixkern,iykern) = sensitivity(ixkern,iykern)/wgtsum
-            ampsens(ixkern,iykern) = ampsens(ixkern,iykern)/wgtsum
+            sensitivity(ixkern,iykern)  = sensitivity(ixkern,iykern)  / wgtsum
+            ampsens(ixkern,iykern)      = ampsens(ixkern,iykern)      / wgtsum
+            ph2qinv_sens(ixkern,iykern) = ph2qinv_sens(ixkern,iykern) / wgtsum
+            am2qinv_sens(ixkern,iykern) = am2qinv_sens(ixkern,iykern) / wgtsum
+            
 !	write(14,*) xk,yk,sensitivity(ixkern,iykern),ampsens(ixkern,iykern), &
 !              phsens(ixkern,iykern),amsens(ixkern,iykern)
         enddo
@@ -547,8 +563,10 @@
       
       do ixkern = 1,nxkern
         do iykern = 1,nykern
-          sensitivity(ixkern,iykern) = sensitivity(ixkern,iykern)*sensnorm
-          ampsens(ixkern,iykern)= ampsens(ixkern,iykern)*sensnorm
+          sensitivity(ixkern,iykern)  = sensitivity(ixkern,iykern)  * sensnorm
+          ampsens(ixkern,iykern)      = ampsens(ixkern,iykern)      * sensnorm
+          ph2qinv_sens(ixkern,iykern) = ph2qinv_sens(ixkern,iykern) * sensnorm
+          am2qinv_sens(ixkern,iykern) = am2qinv_sens(ixkern,iykern) * sensnorm
         enddo
       enddo
 
@@ -558,8 +576,7 @@
       write(*,*) 'bp 5a'
       write(*,*) startvel
       
-      call assignstrt(startvel,nodevel,preunifvel,nnodes, &
-                                 ncol,dxnode,dynode)
+      call assignstrt(startvel,nodevel,preunifvel,nnodes,ncol,dxnode,dynode)
       
       write(*,*) 'bp 5b'
       !  read in starting node velocities based on a priori crustal model
@@ -613,6 +630,7 @@
           read(12,*) stadist(iev,ista), staazi(iev,ista), &
                      bazi(iev,ista), stadelt(iev,ista), &
                      stalat(iev,ista), stalon(iev,ista)
+
           read(12,*) (staamp(iev,ista,ifreq),staph(iev,ista,ifreq), &
                      ifreq=1,nfreq)
         enddo
@@ -1405,9 +1423,9 @@
 
 
 
-!  data vector and partial derivatives listed event by event with all
-!  real data for first event followed by imaginary data, then onto next event
-!  d contains misfit to starting model
+          !  data vector and partial derivatives listed event by event with all
+          !  real data for first event followed by imaginary data, then onto next event
+          !  d contains misfit to starting model
 
 
           kreal = ista + naddat
@@ -1416,12 +1434,13 @@
           d(kimag) = (stimag(iev,ista,ifreq) - preimag)/stddevdata(iev)
 
 
-!  partial derivatives for station amplitude correction factors and attenuation
+          !  partial derivatives for station amplitude correction factors and attenuation
           g(kreal,npnoamp+istavar(istanum(iev,ista))) = &
             prereal/ampmult(istavar(istanum(iev,ista)))/stddevdata(iev)
 
           g(kimag,npnoamp+istavar(istanum(iev,ista))) = &
             preimag/ampmult(istavar(istanum(iev,ista)))/stddevdata(iev)
+
           g(kreal,np) = - xsta(iev,ista)*prereal/stddevdata(iev)
           g(kimag,np) = - xsta(iev,ista)*preimag/stddevdata(iev)
 
@@ -1431,10 +1450,11 @@
           atte1 = 1.
           atte2 = 1.
 
-!  partial derivatives for station phase correction  
+          !  partial derivatives for station phase correction  
           if (itypst2.gt.0) then                                      
             g(kreal,npp+itypst2) = parph1cor1*(-staamp1*sinph1*twopi &
                                    -staamp2*sinph2*twopi)/stddevdata(iev)*ampadj
+
             g(kimag,npp+itypst2) = parph1cor1*(-staamp1*cosph1*twopi &
                                    -staamp2*cosph2*twopi)/stddevdata(iev)*ampadj
           endif
@@ -1486,7 +1506,7 @@
                                   ampwgtnode1(ista,ii,ideg2)/unifvel
 
 
-!  partial derivatives with respect to velocity, & cos2theta & sin2theta
+            !  partial derivatives with respect to velocity, & cos2theta & sin2theta
 
             jjjarea = i6 + nnodes + idnode(ii)
             jjjjarea = jjjarea + iarea
@@ -1536,9 +1556,10 @@
 
           enddo
 
-!  partial derivatives in order are with respect to amplitudes,
-!  azimuths, starting phases and  slowness
+          !  partial derivatives in order are with respect to amplitudes,
+          !  azimuths, starting phases and  slowness
           ip = (iev-1)*6
+
           g(kreal,1+ip) = (1.0+damp1per(iev,ista))*cosph1*atte1 &
                            *ampadj/stddevdata(iev)
 
@@ -2455,7 +2476,8 @@
         unifvel,appvel,ampmult,gamma, &
         xnode, ynode,wgtnode1,ampwgtnode1,xmin, &
         phase,dphase,dampper,istavar,istanum,nxkern,nykern, &
-        ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes
+        ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes, &
+        ph2qinv_sens, am2qinv_sens
 
       twopi = 3.1415928*2.
       onepi = 3.1415928
@@ -2652,14 +2674,15 @@
       integer*4 nxkern,nykern, nnodes
       integer*4 ityp1sta(maxnsta),ntyp1 
       integer*4 nevents
-                                                                                
+                                                                  
       common /residua/ sensitivity,ampsens,d,rloc,azloc,freq, &
         xsta,dtime,avslow,streal,stimag,stddevdata,phcor,  &
         xbox,ybox,ysta,dxkern,dykern,dxnode,dynode, &
         unifvel,appvel,ampmult,gamma, &
         xnode, ynode,wgtnode1,ampwgtnode1,xmin, &
         phase,dphase,dampper,istavar,istanum,nxkern,nykern, &
-        ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes                 
+        ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes, &
+        ph2qinv_sens, am2qinv_sens
 
       common /msft/ bazi,cos2node,sin2node,crrntmod, &
           startamp1,startamp2,stphase1,stphase2,stazim1,stazim2, &
