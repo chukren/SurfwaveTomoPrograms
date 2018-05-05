@@ -2011,14 +2011,14 @@
 !             sigma2 = sumsq/(2*nsta(iev)-8)
 !  rank2 is the rank for velocity. the for 2-D isotropy (n nodes)and uniform anisotropy 
 !  the rank is not 2*n+2 because the velocity is not independent.do the if test in our case 
-	     
-	      if ((2*nsta(iev) - (rank2+rank3)/nevents - 6).lt.1.0) then
-	      sigma2=sumsq/1.0
-	      else
-	      sigma2 = sumsq/(2*nsta(iev) - (rank2+rank3)/nevents - 6)
-	      endif
+            
+              if ((2*nsta(iev) - (rank2+rank3)/nevents - 6).lt.1.0) then
+                sigma2=sumsq/1.0
+              else
+                sigma2 = sumsq/(2*nsta(iev) - (rank2+rank3)/nevents - 6)
+              endif
              
-	      
+              
              stddevdata(iev) = stddevdata(iev)*sqrt(sigma2)
 !  set floor on how small stddevdata is allowed to get - below .03 probably
 !  unrealistic even for best data
@@ -3064,12 +3064,14 @@
  
 
       subroutine updateapri(fendvel,unifvel,preunifvel,dampvel,nnodes)
-!  Take inversion solution of changes to starting model and add back through
-!  linear interpolation to detailed, a priori starting model. Also, generate 
-!  standard deviation of estimate
-!
-!  Slow process because nodes not on regular grid of lat&lon - have to search for
-!  which nodes are within interpolation range for every point
+      !  Take inversion solution of changes to starting model and 
+      !  add back through linear interpolation to detailed, a priori 
+      !  starting model. Also, generate standard deviation of estimate
+      !
+      !  Slow process because nodes not on regular grid of lat & lon - 
+      !  have to search for which nodes are within interpolation range 
+      !  for every point
+
       parameter (maxnodes = 2000, maxstart = 200)
       character*70 fendvel
       real*4 boxlat(4), boxlon(4)
@@ -3080,9 +3082,12 @@
       real*4 newvel(maxstart,maxstart),stddevap(maxstart,maxstart)
       real*4 covar(maxnodes,maxnodes),vchange(maxnodes)
       integer iwgt(maxnodes)
+
       common /gengrid/ nodelat,nodelon,boxlat,boxlon
+      
       common /updatest/ prdlon,prdlat,prdv,dylat,dxlon, &
            beglat,endlat,dlat,beglon,endlon,dlon,nlat,nlon
+      
       common /update2/ covar,vchange
      
       pi = 3.1415928
@@ -3090,57 +3095,69 @@
 
       open (70, file = fendvel)
       write(70,*) beglat,endlat,dlat,beglon,endlon,dlon
+      
       sumall = 0.0
+
       do jj = 1,nlat
-!  to correct for points on mercator grid being closer together away from equator
+        !  to correct for points on mercator grid being closer together 
+        !  away from equator
         sclfac = cos(prdlat(jj)*convdeg)
+        
         do ii = 1,nlon
-	  wgtsum = 0.0
-	  velsum = 0.0
-	  sumstdev = 0.0
-	  nwgt = 0
-	  do kk = 1,nnodes
-	    xsep = abs(prdlon(ii)-nodelon(kk))*sclfac
-	    if ((xsep.le.dxlon).and. &
-                (abs(prdlat(jj)-nodelat(kk)).le.dylat))  then
-              wgt(kk) = (1.- abs(prdlat(jj)-nodelat(kk))/dylat) &
-                             *(1.- xsep/dxlon)
+          wgtsum = 0.0
+          velsum = 0.0
+          sumstdev = 0.0
+          nwgt = 0
+        
+          do kk = 1,nnodes
+            xsep = abs(prdlon(ii)-nodelon(kk))*sclfac
+            if ((xsep.le.dxlon).and. (abs(prdlat(jj)-nodelat(kk)).le.dylat)) then
+              wgt(kk) = (1.- abs(prdlat(jj)-nodelat(kk))/dylat) *(1.- xsep/dxlon)
               nwgt = nwgt+1
               iwgt(nwgt) = kk
               wgtsum = wgtsum + wgt(kk)
-	      velsum = velsum + wgt(kk)*vchange(kk)
-	      sumstdev = sumstdev + wgt(kk)*sqrt(covar(kk,kk))
-	    endif
-	  enddo
-	  if (nwgt.gt.0) then
-      	    newvel(ii,jj)=prdv(ii,jj)+unifvel-preunifvel +velsum/wgtsum
-	    stddevap(ii,jj) = sumstdev/wgtsum
-!  Estimate uncertainty using covariance matrix - but for this application
-!  we don't want to use full covariance including off-diagonal terms, because that
-!  effectively gives estimates appropriate to averages over larger regions involving
-!  multiple nodes.  Instead, what is desired is an estimate of the uncertainty as if
-!  a node had been located at the interpolation point (although points in between really are
-!  known better because the random variations from multiple nodes will tend to average out)..  	    
-!	    do i = 1,nwgt
-!	      do j = 1,nwgt
-!	        sumcov = wgt(iwgt(i))*wgt(iwgt(j))*covar(iwgt(i),iwgt(j))
-!	      enddo
-!	    enddo
-!	    stddevap(ii,jj) = sqrt(sumcov)/wgtsum
-	   else
-	     newvel(ii,jj) = prdv(ii,jj)+unifvel-preunifvel
-	     stddevap(ii,jj) = dampvel
-	   endif
+              velsum = velsum + wgt(kk)*vchange(kk)
+              sumstdev = sumstdev + wgt(kk)*sqrt(covar(kk,kk))
+            endif
+          enddo
+
+          if (nwgt.gt.0) then
+            newvel(ii,jj)=prdv(ii,jj)+unifvel-preunifvel + velsum/wgtsum
+            stddevap(ii,jj) = sumstdev/wgtsum
+
+            !  Estimate uncertainty using covariance matrix - but for this 
+            !  application we don't want to use full covariance including 
+            !  off-diagonal terms, because that effectively gives estimates 
+            !  appropriate to averages over larger regions involving multiple 
+            !  nodes.  Instead, what is desired is an estimate of the 
+            !  uncertainty as if a node had been located at the interpolation 
+            !  point (although points in between really are known better because 
+            !  the random variations from multiple nodes will tend to average out)..  	    
+
+            !do i = 1,nwgt
+            !  do j = 1,nwgt
+            !    sumcov = wgt(iwgt(i))*wgt(iwgt(j))*covar(iwgt(i),iwgt(j))
+            !  enddo
+            !enddo
+            !stddevap(ii,jj) = sqrt(sumcov)/wgtsum
+
+          else
+            newvel(ii,jj) = prdv(ii,jj) + unifvel - preunifvel
+            stddevap(ii,jj) = dampvel
+          endif
+
 !	  write(*,*) ii,jj,nwgt,(iwgt(ij),ij=1,nwgt),prdlon(ii),prdlat(jj)
-	  sumall = sumall + newvel(ii,jj)
-	enddo
+          sumall = sumall + newvel(ii,jj)
+        enddo
       enddo
+
       avgvel = sumall/(nlat*nlon)
       write(70,*) avgvel
+      
       do jj = 1,nlat
         do ii = 1,nlon
-	  write(70,*) prdlon(ii),prdlat(jj),newvel(ii,jj),stddevap(ii,jj)
-	enddo
+          write(70,*) prdlon(ii),prdlat(jj),newvel(ii,jj),stddevap(ii,jj)
+        enddo
       enddo
       
       close (70)
