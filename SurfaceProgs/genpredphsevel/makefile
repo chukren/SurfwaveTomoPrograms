@@ -9,10 +9,10 @@ objfiles = chareq.o gravty.o ssol.o cont.o inival.o step.o \
 all:	run.saito phsevel2
 
 run.saito: run.saito.f ${objfiles}
-	g77 run.saito.f -o run.saito ${objfiles}
+	ifort run.saito.f -o run.saito ${objfiles}
 
 phsevel2: phsevel2.f ${objfiles}
-	g77 phsevel2.f -o phsevel2 ${objfiles}
+	ifort phsevel2.f -o phsevel2 ${objfiles}
 	
 
 .PHONY : clean
