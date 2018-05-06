@@ -24,7 +24,8 @@ c  nlay: number of layers in the lithosphere and upper mantle
      
       real*4	depth(maxlay)
       real*4	zero,thick(maxlay),dens(maxlay),density
-      real*4    depmant(maxlay),densmant(maxlay),almant(maxlay),betmant(maxlay)	
+      real*4    depmant(maxlay),densmant(maxlay),almant(maxlay)
+      real*4    betmant(maxlay)	
       real*4    psait(npermax),phasait(npermax),bandsait(npermax)
       real*4    depsait(npermax),betsait(npermax)
       real*4    lat,lon,lontemp, lattemp 
@@ -88,7 +89,7 @@ c  unit=40: lowmantle.d
 c  20 to 21 line P velocity digitals increse by 1  
         open( 40, file = flowmantle)
 	read(40,*) nlowlay
-        do i=1,nlowlay                                                               
+        do i=1,nlowlay                                                
 	   read(40,*) depmant(i),densmant(i),almant(i),betmant(i)            
 	enddo
       nlayall= 2*nlay + nlowlay
