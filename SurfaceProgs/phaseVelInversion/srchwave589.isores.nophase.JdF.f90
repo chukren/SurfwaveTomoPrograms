@@ -97,8 +97,8 @@
       real*4 stalat(maxevnts,maxnsta),stalon(maxevnts,maxnsta)
       real*4 tazim, delta, tazimref, bazimnd(maxnodes)
       real*4 adistsq,wgttemp(maxnodes)
-      real*4 wgtnode1(maxnsta,maxnodes,ndeg)
-      real*4 ampwgtnode1(maxnsta,maxnodes,ndeg) 
+      real*8 ph2c_wgtnode(maxnsta,maxnodes,ndeg)
+      real*8 am2c_wgtnode(maxnsta,maxnodes,ndeg) 
       real*4 dtime(maxnsta),avslow(maxnsta)
       real*4 dtime1(maxnsta),dtime2(maxnsta)
       real*4 avslow1(maxnsta), avslow2(maxnsta)
@@ -144,8 +144,8 @@
       double precision subgtginv(nparam,nparam)
       double precision subsavegtg(nparam,nparam)
       
-      real*8 sensitivity(maxnxints,maxnyints)
-      real*8 ampsens(maxnxints,maxnyints)
+      real*8 ph2phsv_sens(maxnxints,maxnyints)
+      real*8 am2phsv_sens(maxnxints,maxnyints)
       real*8 amsens(maxnxints,maxnyints),phsens(maxnxints,maxnyints)
       real*4 kk,lamda
       real*4 amplitude(mxfreqkern), freqkern(mxfreqkern)
@@ -155,10 +155,16 @@
       real*8 kern_ph2qinv(maxnxints,maxnyints)
       real*8 am2qinv_sens(maxnxints,maxnyints) 
       real*8 ph2qinv_sens(maxnxints,maxnyints)
+      real*8 ph2q_wgtnode(maxnsta,maxnodes,ndeg)
+      real*8 am2q_wgtnode(maxnsta,maxnodes,ndeg) 
       real*4 freq_ref, kern_Qfactor, kern_phi, kern_denom
       real*4 ph2phsv, am2phsv
       real*4 qinv, grpvel
       real*4 kern_freqdep
+      real*8 ph_elas, ph_anel, am_elas, am_anel
+      real*8 gamma_rayl(maxnodes)
+
+      logical debug
       
       character*2   nettemp
       character*4   statemp 
@@ -176,26 +182,37 @@
         
       character*100 buffer
       
-!      character*75  dummy1
-!      character*100 foutput,fn(maxevnts,maxnsta),fsummary
-!  ******* changes in this area from yun version
-!      character*100 foutput,fsummary
+      ! character*75  dummy1
+      ! character*100 foutput,fn(maxevnts,maxnsta),fsummary
+      ! ******* changes in this area from yun version
+      ! character*100 foutput,fsummary
 
       character*4   staname(maxnsta)
       character*110 fn(maxevnts,maxnsta)
 
-      common /residua/ sensitivity,ampsens,d,rloc,azloc,freq, &
-           xsta,dtime,avslow,streal,stimag,stddevdata,phcor, &
-           xbox,ybox,ysta,dxkern,dykern,dxnode,dynode, &
-           unifvel,appvel,ampmult,gamma, &
-           xnode, ynode,wgtnode1,ampwgtnode1,xmin, &
-           phase,dphase,dampper,istavar,istanum,nxkern,nykern, &
-           ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes, &
-           ph2qinv_sens, am2qinv_sens
+      ! In COMMON block, var are stored in order, if the length of 
+      ! var before a (real*8) var is not of multiple of 8, the reading 
+      ! will be in trouble.  So make sure the lenghth of var align in 
+      ! descending order: double precision, real, integer
 
-      common /msft/ bazi,cos2node,sin2node,crrntmod, &
-           startamp1,startamp2,stphase1,stphase2,stazim1,stazim2, &
-           nevents,idnode,ideg1,ideg2,nobs,i6,iarea
+      common /residua/ ph2phsv_sens, am2phsv_sens, &
+                       ph2qinv_sens, am2qinv_sens, &
+                       ph2q_wgtnode, am2q_wgtnode, &
+                       ph2c_wgtnode, am2c_wgtnode, &
+                       gamma_rayl, gamma, d, rloc, &
+                       azloc, freq, xsta, dtime, avslow, &
+                       streal,stimag, stddevdata, phcor, &
+                       xbox, ybox, ysta, dxkern, dykern, &
+                       dxnode, dynode, unifvel, appvel,  &
+                       ampmult, xnode, ynode, xmin, phase, &
+                       dphase, dampper, istavar, istanum, &
+                       nxkern, nykern, ityp1sta, ntyp1, iref, &
+                       nsta, iev, naddat, ifreq, nnodes
+
+      common /msft/ bazi, cos2node, sin2node, crrntmod, &
+                    startamp1, startamp2, stphase1, &
+                    stphase2, stazim1, stazim2, nevents, &
+                    idnode, ideg1, ideg2, nobs, i6, iarea
      
       common /gengrid/ nodelat,nodelon,boxlat,boxlon
        
@@ -207,18 +224,19 @@
       circ = 6371.*3.1415928/180.
       twopi = 3.1415928*2.
 
-      ! Note we choose 50 s rather than 1 sec for the reference frequency
-      ! Therefore the inversion results cannot be directly compare with 
-      ! PREM model or other model which normally obtained at 1 Hz
+      !  Note: we choose 50 s rather than 1 sec for the reference frequency
+      !  Therefore the inversion results cannot be directly compare with 
+      !  PREM model or other model which normally obtained at 1 Hz
+      !  --YYR 05/02/2018 
 
       freq_ref = 0.02 ! Hz 
   
 
-! Corresponding ID for abnormal stations.                   
-! ntyp1: number of stations need phase correction
+      !  Corresponding ID for abnormal stations.                   
+      !  ntyp1: number of stations need phase correction
       ntyp1 = 0 
 
-!        data (ityp1sta(ityp), ityp=1, 4 )/1,3,172,174/
+      !  data (ityp1sta(ityp), ityp=1, 4) /1,3,172,174/
       if (ntyp1.ne.0) then              
         ityp1sta(1) = 1
         ityp1sta(2) = 3
@@ -230,8 +248,9 @@
 201   format(a70, a2)
 202   format(a69, a4) ! precisely cut the STANM out from the path file
 
-!  read list of files and frequencies to be analyzed and files to output results
-!  Usually will pipe in data from some file like eqlistper50. 
+
+      !  read list of files and frequencies to be analyzed and files to output results
+      !  Usually will pipe in data from some file like eqlistper50. 
 
       print *, "bp 1"  
 
@@ -247,7 +266,7 @@
       nobs = 0
       do iev = 1, nevents
         read(99,*) nsta(iev),idnum(iev)
-        nobs = nobs+ 2*nsta(iev)
+        nobs = nobs + 2*nsta(iev)
 
         do i = 1, nsta(iev)
           read(99,'(a)') fn(iev,i)
@@ -296,9 +315,9 @@
       open(66, file = sensfn)
       open(21, file = fresdiag)
       open(17, file = fresmat)
-!      open(15, file = finvrsnodes)
-!      open(60, file = startvel)
-!      open(66, file = dirpath//sensfn)
+      !open(15, file = finvrsnodes)
+      !open(60, file = startvel)
+      !open(66, file = dirpath//sensfn)
 
       print *, "bp 2"
       !  do following step to extract station name from filename,
@@ -376,6 +395,7 @@
 !      read(15, *) dxnode,dynode
 
       call genreggrid(finvrsnodes,nnodes,ncol,dxnd,dynd)
+
       dxnode = abs(dxnd)
       dynode = abs(dynd)  
       
@@ -391,6 +411,7 @@
 !     generate sensitivity kernel
 !     first, read in spectral file of frequencies and relative amps involved in particular
 !     window/period processing for this target frequency
+      
       print *, "bp 4"
 
       radius = 6371.  ! km
@@ -434,8 +455,8 @@
           kern_am2qinv(ixkern,iykern) = 0.0
           kern_ph2qinv(ixkern,iykern) = 0.0
 
-          sensitivity(ixkern,iykern) = 0.
-          ampsens(ixkern,iykern) = 0.
+          ph2phsv_sens(ixkern,iykern) = 0.
+          am2phsv_sens(ixkern,iykern) = 0.
 
           am2qinv_sens(ixkern,iykern) = 0.0
           ph2qinv_sens(ixkern,iykern) = 0.0
@@ -467,8 +488,8 @@
               delta2 = sqrt(xkern**2+ykern**2)
             endif
 
-            ! 2D velocity kernels are from Zhou et al. (2004), GJI, "3-D sensitivity 
-            !  kernels for surface-wave observables"
+            ! 2D velocity kernels are from Zhou et al. (2004), GJI, "3-D 
+            !  sensitivity kernels for surface-wave observables"
 
             kern_phi = kk*(delta1+delta2)/radius + pi/4.
             kern_denom = sqrt(8.*pi*kk*abs(sin(delta2/radius)))
@@ -532,29 +553,29 @@
                 ykk = (iy-1)*dykern + ybegkern
                 wgtkern = (1.-abs(xk-xkk)/dxnode)*(1.-abs(yk-ykk)/dynode)
 
-                sensitivity(ixkern,iykern) = sensitivity(ixkern,iykern) &
-                                  + phsens(ix,iy)*wgtkern
+                ph2phsv_sens(ixkern,iykern) = ph2phsv_sens(ixkern,iykern) &
+                                            + phsens(ix,iy)*wgtkern
 
-                ampsens(ixkern,iykern) = ampsens(ixkern,iykern) &
-                                  + amsens(ix,iy)*wgtkern
+                am2phsv_sens(ixkern,iykern) = am2phsv_sens(ixkern,iykern) &
+                                            + amsens(ix,iy)*wgtkern
         
                 ph2qinv_sens(ixkern,iykern) = ph2qinv_sens(ixkern,iykern) &
-                                  + kern_ph2qinv(ix,iy)*wgtkern
+                                            + kern_ph2qinv(ix,iy)*wgtkern
 
                 am2qinv_sens(ixkern,iykern) = am2qinv_sens(ixkern,iykern) &
-                                  + kern_am2qinv(ix,iy)*wgtkern
+                                            + kern_am2qinv(ix,iy)*wgtkern
 
                 wgtsum = wgtsum+wgtkern
               enddo
             enddo
 
-            sensitivity(ixkern,iykern)  = sensitivity(ixkern,iykern)  / wgtsum
-            ampsens(ixkern,iykern)      = ampsens(ixkern,iykern)      / wgtsum
+            ph2phsv_sens(ixkern,iykern) = ph2phsv_sens(ixkern,iykern) / wgtsum
+            am2phsv_sens(ixkern,iykern) = am2phsv_sens(ixkern,iykern) / wgtsum
             ph2qinv_sens(ixkern,iykern) = ph2qinv_sens(ixkern,iykern) / wgtsum
             am2qinv_sens(ixkern,iykern) = am2qinv_sens(ixkern,iykern) / wgtsum
             
-!	write(14,*) xk,yk,sensitivity(ixkern,iykern),ampsens(ixkern,iykern), &
-!              phsens(ixkern,iykern),amsens(ixkern,iykern)
+            !write(14,*) xk,yk,sensitivity(ixkern,iykern),am2phsv_sens(ixkern,iykern), &
+            !            phsens(ixkern,iykern),amsens(ixkern,iykern)
         enddo
       enddo
 
@@ -563,8 +584,8 @@
       
       do ixkern = 1,nxkern
         do iykern = 1,nykern
-          sensitivity(ixkern,iykern)  = sensitivity(ixkern,iykern)  * sensnorm
-          ampsens(ixkern,iykern)      = ampsens(ixkern,iykern)      * sensnorm
+          ph2phsv_sens(ixkern,iykern) = ph2phsv_sens(ixkern,iykern) * sensnorm
+          am2phsv_sens(ixkern,iykern) = am2phsv_sens(ixkern,iykern) * sensnorm
           ph2qinv_sens(ixkern,iykern) = ph2qinv_sens(ixkern,iykern) * sensnorm
           am2qinv_sens(ixkern,iykern) = am2qinv_sens(ixkern,iykern) * sensnorm
         enddo
@@ -572,7 +593,7 @@
 
       write (*,*) 'done with sensitivity'
 
-      ! assign velocities to each grid node apriori
+      ! assign velocities to each grid node a priori
       write(*,*) 'bp 5a'
       write(*,*) startvel
       
@@ -596,7 +617,7 @@
 
         unifvel = preunifvel
         nodevel(i) = nodevel(i) + unifvel - preunifvel
-!	write(14,*) nodelat(i),nodelon(i),nodevel(i)
+        !write(14,*) nodelat(i),nodelon(i),nodevel(i)
       enddo
 
 
@@ -611,8 +632,8 @@
       iarea = nnodes
       
       do i=1, nnodes
-!	 read(20,*)ix, xx, xx, idnode(i)  			
-!	 idnode(i) = 1 
+         !read(20,*)ix, xx, xx, idnode(i)  			
+         !idnode(i) = 1 
         idnode(i) = i
       enddo
 
@@ -669,11 +690,13 @@
         !  velocities for each area then amplitude correction factors, phase 
         !  correction factors for anomalous stations and attenuation factor gamma
         
-        npnoamp = 6*nevents + 1*nnodes + 2*iarea 
+        npnoamp = 6*nevents + 2*nnodes + 2*iarea 
         npp = npnoamp + jstacnt 
-        np = npp + ntyp1 + 1                           
+        np = npp + ntyp1                           
         kj = nnodes / ncol
         i6 = 6*nevents
+
+        write(*,*) "model dimension:", np
 
         !   ***************************************
         !   WARNING - the previous is specific to grid of node points - specify iages
@@ -683,6 +706,7 @@
           change(ii) = 0.0
         enddo
 
+        !  initialize parameter for two plane waves for each event 
         do iev = 1, nevents
           ip = (iev-1)*6
 
@@ -705,6 +729,8 @@
           !  search for wave parameters won't go far astray.  
         enddo
 
+
+        !  initialize phase velocity 
         do ii= 1, nnodes
           ip = i6 + ii
           origmod(ip) = nodevel(ii)
@@ -713,14 +739,26 @@
           crrntmod(ip) = origmod(ip)
         enddo
 
-        ! anisotropy varies in different areas	
+        !  initialize gamma factor for attenuation
+        !  --YYR 05/06/18
+        do ii = 1, nnodes
+          ip = i6 + nnodes + ii
+          gamma = 0.0
+          origmod(ip) = gamma
+          covinv(ip) = 1.0/(0.0002**2)
+          crrntmod(ip) = origmod(ip)
+        enddo 
+
+        !  anisotropy varies in different areas	
         do i =1, iarea
-          ipp = i6 + nnodes + i
-          ippp = ipp + iarea 
+          ipp = i6 + nnodes + i    ! index of B1 cos(2theta)
+          ippp = ipp + iarea       ! index of B2 sin(2theta)
           origmod(ipp)  = 0.0
           origmod(ippp) = 0.0
+
           covinv(ipp)  = 1./(dampaniso**2)
           covinv(ippp) = 1./(dampaniso**2)
+          
           crrntmod(ipp)  = origmod(ipp)
           crrntmod(ippp) = origmod(ippp)
         enddo  
@@ -753,16 +791,11 @@
         endif
 
 
-        !  initialize gamma factor for attenuation
-        gamma = 0.0
-        origmod(np) = gamma
-        crrntmod(np) = origmod(np)
-        covinv(np) = 1.0/(0.0002**2)
-
 
         !  increase the variance for edges for velocity 
+        !  YYR 05/06/18  itp = 2 for attenuation
         varfac2 = 1.
-        do itp = 1,1
+        do itp = 1,2
           ityp = nnodes*(itp-1)
           
           !  right end 
@@ -803,7 +836,7 @@
           !  Also find normalizing amplitude to equalize earthquakes of different
           !  size, using rms amplitude (old version used largest amplitude)
 
-          amplarge =0.0
+          amplarge = 0.0
           amprms(iev,ifreq) = 0.0
           iref(iev) = 1
 
@@ -818,7 +851,7 @@
 
           enddo
 
-          ! write(*,*) iev,iref(iev)
+          !if(debug) write(*,*) iev,iref(iev)
           amprms(iev,ifreq) = sqrt(amprms(iev,ifreq)/nsta(iev))
 
   
@@ -829,7 +862,7 @@
           !  at original azimuth along great circle.
          
           !  + x direction is in direction of propagation along great circle path.
-          !  +y is 90 deg counterclockwise from x
+          !  + y is 90 deg counterclockwise from x
           !  staazi are measured clockwise from north
           xsta(iev,iref(iev))  = 0.0
           ysta(iev,iref(iev))  = 0.0
@@ -841,13 +874,12 @@
               xsta(iev,ista) = stadist(iev,ista) - stadist(iev,iref(iev))
               azidiff = staazi(iev,iref(iev)) - staazi(iev,ista)
               
-              if (azidiff.gt.180.) azidiff = azidiff -360.
-              if (azidiff.lt.-180.) azidiff = azidiff +360.
+              if (azidiff.gt. 180.) azidiff = azidiff - 360.
+              if (azidiff.lt.-180.) azidiff = azidiff + 360.
               
-              ysta(iev,ista) = circ*sin(stadelt(iev,ista)*convdeg)* &
-                               azidiff
+              ysta(iev,ista) = circ*sin(stadelt(iev,ista)*convdeg)*azidiff
               rloc(iev,ista) = sqrt(xsta(iev,ista)*xsta(iev,ista) + &
-                               ysta(iev,ista)*ysta(iev,ista))
+                                    ysta(iev,ista)*ysta(iev,ista))
               azloc(iev,ista) = atan2(ysta(iev,ista),xsta(iev,ista))
             endif
           enddo
@@ -857,10 +889,11 @@
           !  with that for stations
 
           call gohead(stalat(iev,iref(iev)),stalon(iev,iref(iev)), &
-               stadelt(iev,iref(iev)),bazi(iev,iref(iev)),applat,applon)
+                      stadelt(iev,iref(iev)),bazi(iev,iref(iev)), &
+                      applat,applon)
 
           call disthead(applat,applon,stalat(iev,iref(iev)), &
-               stalon(iev,iref(iev)),delta,tazimref)
+                        stalon(iev,iref(iev)),delta,tazimref)
 
 
           !  now calculate x,y of each node 
@@ -878,24 +911,25 @@
             xnode(iev,inode) = appcirc*delta - stadist(iev,iref(iev))
             azidiff = tazimref - tazim
 
-            if (azidiff.gt.180.) azidiff = azidiff -360.
-            if (azidiff.lt.-180.) azidiff = azidiff +360.
+            if (azidiff.gt. 180.) azidiff = azidiff - 360.
+            if (azidiff.lt.-180.) azidiff = azidiff + 360.
 
             ynode(iev,inode) = appcirc*sin(delta*convdeg)*azidiff
           enddo
 
           !  similarly for outlines of region of interest
           do ibox = 1, 4
-            call disthead(applat,applon,boxlat(ibox),boxlon(ibox) &
-                                             ,delta,tazim)
+            call disthead(applat,applon,boxlat(ibox),boxlon(ibox), &
+                          delta,tazim)
+        
             xbox(iev,ibox) = appcirc*delta - stadist(iev,iref(iev))
             azidiff = tazimref - tazim
         
-            if (azidiff.gt.180.) azidiff = azidiff -360.
-            if (azidiff.lt.-180.) azidiff = azidiff +360.
+            if (azidiff.gt. 180.) azidiff = azidiff - 360.
+            if (azidiff.lt.-180.) azidiff = azidiff + 360.
         
             ybox(iev,ibox) = appcirc*sin(delta*convdeg)*azidiff
-            !      write(*,*) ibox, xbox(ibox),ybox(ibox),delta, tazim
+            !if(debug) write(*,*) ibox, xbox(ibox),ybox(ibox),delta, tazim
           enddo
 
           !  find closest corner along great circle path
@@ -919,7 +953,6 @@
             azimt = ((ideg-1.) - (ndeg-1.)/2.)*convdeg
             xmin(iev,ideg) = xbox(iev,jbox(iev))*cos(azimt) &
                            + ybox(iev,jbox(iev))*sin(azimt) 
-
   124     enddo
 
               
@@ -958,9 +991,9 @@
         do ismth = 1,ncol
           do jsmth = 2, kj-1
             ism = (ismth-1)*kj + jsmth
-            b(ism,ism) = 2.0 +b(ism,ism)
-            b(ism,ism-1) = -1.0+ b(ism,ism-1)
-            b(ism,ism+1) = -1.0+ b(ism,ism+1)
+            b(ism,ism)   =  2.0 + b(ism,ism)
+            b(ism,ism-1) = -1.0 + b(ism,ism-1)
+            b(ism,ism+1) = -1.0 + b(ism,ism+1)
           enddo
         enddo
 
@@ -968,7 +1001,7 @@
         do jsmth = 1, kj
           do ismth = 2, ncol-1
             ism = (ismth-1)*kj + jsmth 
-            b(ism,ism) = 2.0 +b(ism,ism)
+            b(ism,ism)    =  2.0 + b(ism,ism)
             b(ism,ism-kj) = -1.0 + b(ism,ism-kj)
             b(ism,ism+kj) = -1.0 + b(ism,ism+kj)
           enddo
@@ -1013,7 +1046,7 @@
 
         if (icnt.gt.5) then
           do ii = 1, jstacnt
-            ip = npnoamp+ii
+            ip = npnoamp + ii
             covinv(ip) = 1.0/(0.30**2)
           enddo
         endif
@@ -1040,8 +1073,9 @@
         enddo 
 
 
+        !==============================================================
         !  begin loop over events for residuals and partial derivatives
-
+        !==============================================================
         naddat = 0
  
         do iev = 1, nevents
@@ -1066,8 +1100,8 @@
           !  calculate current apparent velocity at each node
 
           do ii = 1, nnodes
-            iii  = ii+i6
-            jjj  = i6+nnodes + idnode(ii)
+            iii  = ii + i6
+            jjj  = i6 + 2*nnodes + idnode(ii)
             jjjj = jjj + iarea
             appvel(ii) = crrntmod(iii) &
                         + cos2node(ii,ideg)*crrntmod(jjj) &
@@ -1076,29 +1110,26 @@
 
 
 
-          !  long loop over stations, generating sensitivity kernels for each
+          !  long loop over stations, generating sensitivity kernels 
+          !  for each station
 
           do 102 ista = 1, nsta(iev)
 
             do ii = 1, nnodes
-              wgtnode1(ista,ii,ideg) = 0.0
-              ampwgtnode1(ista,ii,ideg) = 0.0
+              ph2c_wgtnode(ista,ii,ideg) = 0.0
+              am2c_wgtnode(ista,ii,ideg) = 0.0
+
+              ph2q_wgtnode(ista,ii,ideg) = 0.0
+              am2q_wgtnode(ista,ii,ideg) = 0.0
             enddo
 
-            xstatemp = xsta(iev,ista)*cs1z &
-                       + ysta(iev,ista)*sn1z               
-     
-            ystatemp = -xsta(iev,ista)*sn1z &
-                       + ysta(iev,ista)*cs1z     
+            xstatemp =  xsta(iev,ista)*cs1z + ysta(iev,ista)*sn1z
+            ystatemp = -xsta(iev,ista)*sn1z + ysta(iev,ista)*cs1z
 
             do ii = 1,nnodes
 
-              xnodetemp = xnode(iev,ii)*cs1z &
-                          + ynode(iev,ii)*sn1z               
-     
-              ynodetemp = -xnode(iev,ii)*sn1z &
-                          + ynode(iev,ii)*cs1z     
-
+              xnodetemp =  xnode(iev,ii)*cs1z + ynode(iev,ii)*sn1z
+              ynodetemp = -xnode(iev,ii)*sn1z + ynode(iev,ii)*cs1z     
 
               xstanode = xnodetemp - xstatemp
               ystanode = ynodetemp - ystatemp
@@ -1111,17 +1142,17 @@
               !  i.e., dxkern << smoothing length.
 
               if (xnodetemp.ge.xmin(iev,ideg)) then
+      
                 if (xstanode.ge.0.0) then
-                  ixindex = int( xstanode/dxkern +0.5) + (nxkern+1)/2
+                  ixindex = int(xstanode/dxkern + 0.5) + (nxkern+1)/2
                 else
-                  ixindex = int( xstanode/dxkern -0.5) + (nxkern+1)/2
+                  ixindex = int(xstanode/dxkern - 0.5) + (nxkern+1)/2
                 endif
 
                 if (ystanode.ge.0.0) then
-                  iyindex = int( ystanode/dykern +0.5) + (nykern+1)/2
+                  iyindex = int(ystanode/dykern + 0.5) + (nykern+1)/2
                 else
-
-                  iyindex = int( ystanode/dykern -0.5) + (nykern+1)/2
+                  iyindex = int(ystanode/dykern - 0.5) + (nykern+1)/2
                 endif
 
                 if (ixindex .lt.1 .or. ixindex .gt. nxkern &
@@ -1130,22 +1161,30 @@
                   write(*,*) 'ixindex,iyindex,iev,ista,ideg', &
                               ixindex,iyindex,iev,ista,ideg
 
-                  wgtnode1(ista,ii,ideg)    = 0.
-                  ampwgtnode1(ista,ii,ideg) = 0.  
-
+                  ph2c_wgtnode(ista,ii,ideg) = 0.0
+                  am2c_wgtnode(ista,ii,ideg) = 0.0 
+                  
+                  ph2q_wgtnode(ista,ii,ideg) = 0.0
+                  am2q_wgtnode(ista,ii,ideg) = 0.0
                 else
-                  wgtnode1(ista,ii,ideg) = sensitivity(ixindex,iyindex)
-                  ampwgtnode1(ista,ii,ideg) =  ampsens(ixindex,iyindex)
+                  ph2c_wgtnode(ista,ii,ideg) = ph2phsv_sens(ixindex,iyindex)
+                  am2c_wgtnode(ista,ii,ideg) = am2phsv_sens(ixindex,iyindex)
+
+                  ph2q_wgtnode(ista,ii,ideg) = ph2qinv_sens(ixindex,iyindex)
+                  am2q_wgtnode(ista,ii,ideg) = am2qinv_sens(ixindex,iyindex)
                 endif 
 
               else 
-                wgtnode1(ista,ii,ideg)    = 0.
-                ampwgtnode1(ista,ii,ideg) = 0.  
+                ph2c_wgtnode(ista,ii,ideg) = 0.0
+                am2c_wgtnode(ista,ii,ideg) = 0.0  
+
+                ph2q_wgtnode(ista,ii,ideg) = 0.0
+                am2q_wgtnode(ista,ii,ideg) = 0.0
               endif      
             enddo
 
 
-            dphase(ista,ideg) = 0.
+            dphase(ista,ideg)  = 0.
             dampper(ista,ideg) = 0.
 
             !  corrections for second order effects of large velocity changes 
@@ -1153,10 +1192,16 @@
 
             do inode = 1, nnodes
               ! dphase(ista,ideg) = dphase(ista,ideg) &
-              !                + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
+              !                + (1.0/twopi)*ph2c_wgtnode(ista,inode,ideg) &
               !                *(appvel(inode)-unifvel)/unifvel
+              ph_elas = (1.0/twopi)*ph2c_wgtnode(ista,inode,ideg) &
+                        * (appvel(inode)-unifvel)/appvel(inode) &
+                        / (appvel(inode)/unifvel)
+
+              !ph_anel = (1.0/twopi)*ph2q_wgtnode(ista,inode,ideg) 
+                        
               dphase(ista,ideg) = dphase(ista,ideg) &
-                               + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
+                               + (1.0/twopi)*ph2c_wgtnode(ista,inode,ideg) &
                                *(appvel(inode)-unifvel)/appvel(inode) &
                                /(appvel(inode)/unifvel)
 
@@ -1165,7 +1210,7 @@
 
             do inode =1, nnodes
               dampper(ista,ideg) = dampper(ista,ideg) &
-                                   +ampwgtnode1(ista,inode,ideg)* &
+                                   +am2c_wgtnode(ista,inode,ideg)* &
 !                                  (appvel(inode)-unifvel)/unifvel &
                                    (appvel(inode)-unifvel)/appvel(inode) &
                                    /(appvel(inode)/unifvel)
@@ -1175,14 +1220,14 @@
           !=== end loop over stations ===
 
  125    enddo
+        !write(*,*) iev, dphase(5,5),dampper(5,5)
         !===  end loop over angles ===
 
-        !write(*,*) iev, dphase(5,5),dampper(5,5)
 
 
         !  find best fitting wave parameters from grid search
+        
         call search(pb)
-
         !write(*,*)iev,pb(3)/convdeg,pb(4)/convdeg,pb(1),pb(2),pb(5),pb(6)
 
         !  use best model as event starting model for linearized inversion
@@ -1461,49 +1506,49 @@
 
           do ii = 1, nnodes
 
-            parph1v = (1.0/twopi)*wgtnode1(ista,ii,ideg1)/unifvel &
-               - (1.0/twopi)*wgtnode1(iref(iev),ii,ideg1)/unifvel
+            parph1v = (1.0/twopi)*ph2c_wgtnode(ista,ii,ideg1)/unifvel &
+               - (1.0/twopi)*ph2c_wgtnode(iref(iev),ii,ideg1)/unifvel
 
-            parph2v =  (1.0/twopi)*wgtnode1(ista,ii,ideg2)/unifvel &
-                - (1.0/twopi)*wgtnode1(iref(iev),ii,ideg2)/unifvel
+            parph2v =  (1.0/twopi)*ph2c_wgtnode(ista,ii,ideg2)/unifvel &
+                - (1.0/twopi)*ph2c_wgtnode(iref(iev),ii,ideg2)/unifvel
 
             parph1cs = (1.0/twopi)*cos2node(ii,ideg1)* &
-                       wgtnode1(ista,ii,ideg1)/unifvel &
+                       ph2c_wgtnode(ista,ii,ideg1)/unifvel &
                        - (1.0/twopi)*cos2node(ii,ideg1)* &
-                       wgtnode1(iref(iev),ii,ideg1)/unifvel
+                       ph2c_wgtnode(iref(iev),ii,ideg1)/unifvel
 
             parph2cs = (1.0/twopi)*cos2node(ii,ideg2)* &
-                       wgtnode1(ista,ii,ideg2)/unifvel &
+                       ph2c_wgtnode(ista,ii,ideg2)/unifvel &
                        - (1.0/twopi)*cos2node(ii,ideg2)* &
-                               wgtnode1(iref(iev),ii,ideg2)/unifvel
+                               ph2c_wgtnode(iref(iev),ii,ideg2)/unifvel
 
             parph1sn = (1.0/twopi)*sin2node(ii,ideg1)* &
-                       wgtnode1(ista,ii,ideg1)/unifvel &
+                       ph2c_wgtnode(ista,ii,ideg1)/unifvel &
                        - (1.0/twopi)*sin2node(ii,ideg1)* &
-                       wgtnode1(iref(iev),ii,ideg1)/unifvel
+                       ph2c_wgtnode(iref(iev),ii,ideg1)/unifvel
 
             parph2sn = (1.0/twopi)*sin2node(ii,ideg2)* &
-                       wgtnode1(ista,ii,ideg2)/unifvel &
+                       ph2c_wgtnode(ista,ii,ideg2)/unifvel &
                        - (1.0/twopi)*sin2node(ii,ideg2)* &
-                       wgtnode1(iref(iev),ii,ideg2)/unifvel
+                       ph2c_wgtnode(iref(iev),ii,ideg2)/unifvel
 
 
 
-            paramp1v = startamp1(iev)*ampwgtnode1(ista,ii,ideg1)/unifvel
-            paramp2v = startamp2(iev)*ampwgtnode1(ista,ii,ideg2)/unifvel
+            paramp1v = startamp1(iev)*am2c_wgtnode(ista,ii,ideg1)/unifvel
+            paramp2v = startamp2(iev)*am2c_wgtnode(ista,ii,ideg2)/unifvel
 
 
             paramp1cs  = startamp1(iev)*cos2node(ii,ideg1)* &
-                                  ampwgtnode1(ista,ii,ideg1)/unifvel
+                                  am2c_wgtnode(ista,ii,ideg1)/unifvel
 
             paramp2cs  = startamp2(iev)*cos2node(ii,ideg2)* &
-                                  ampwgtnode1(ista,ii,ideg2)/unifvel
+                                  am2c_wgtnode(ista,ii,ideg2)/unifvel
 
             paramp1sn  = startamp1(iev)*sin2node(ii,ideg1)* &
-                                  ampwgtnode1(ista,ii,ideg1)/unifvel
+                                  am2c_wgtnode(ista,ii,ideg1)/unifvel
 
             paramp2sn  = startamp2(iev)*sin2node(ii,ideg2)* &
-                                  ampwgtnode1(ista,ii,ideg2)/unifvel
+                                  am2c_wgtnode(ista,ii,ideg2)/unifvel
 
 
             !  partial derivatives with respect to velocity, & cos2theta & sin2theta
@@ -1624,20 +1669,22 @@
 
 !        write(*,*) "end loop over events for partial derivatives"
 
-!  Calculate gtg and gtd	
+        !  Calculate gtg and gtd	
         do j = 1, np
           gtd(j) = 0.0
           do i = 1, nobs
             gtd(j) = gtd(j) + g(i,j)*d(i)
           enddo
-!   add to gtd Tarantola term penalizing misfit to original starting model
-!   but skip for wave parameters
+
+          !   add to gtd Tarantola term penalizing misfit to original starting model
+          !   but skip for wave parameters
 
           if (j.le.i6) gtdcmm(j) = gtd(j)       
           if (j.gt.i6) gtdcmm(j) = gtd(j) -  &
                               covinv(j)*(crrntmod(j)-origmod(j))
-!          gtdcmm(j) = gtd(j) - covinv(j)*(crrntmod(j)-origmod(j))
-!  construct gtg  
+          !            gtdcmm(j) = gtd(j) - covinv(j)*(crrntmod(j)-origmod(j))
+          
+          !  construct gtg  
           do jj = 1,j
             gtg(jj,j) = 0.0
             do i = 1, nobs
@@ -1647,9 +1694,11 @@
             savegtg(j,jj) = gtg(j,jj)
             savegtg(jj,j) = gtg(jj,j)
           enddo
-! increase damping for wave parameters
+
+          ! increase damping for wave parameters
           gtg(j,j) = gtg(j,j) + covinv(j)
         enddo
+
 !  ******************************
 !   add smoothness constraint (minimum curvature).  Find coefficient, smthco, 
 !  that minimizes, in least squares sense, the off-diagonal terms of gtg,
@@ -2168,14 +2217,16 @@
          ' data std dev', rmsphase(iev), 'rms phase misfit  s', &
          '  rms amp mistfit   ',  rmsamp(iev)
 
-          wvaz1= stazim1(iev)/convdeg
+          wvaz1 = stazim1(iev)/convdeg
           wvaz2 = stazim2(iev)/convdeg
+
           stdwvaz1 = stddev(ip+3)/convdeg
           stdwvaz2 = stddev(ip+4)/convdeg
+
           write(10,*) wvaz1, startamp1(iev), stphase1(iev)
-          write(10,*) wvaz2,startamp2(iev), stphase2(iev)
+          write(10,*) wvaz2, startamp2(iev), stphase2(iev)
           write(11,*) wvaz1, startamp1(iev), stphase1(iev)
-          write(11,*) wvaz2,startamp2(iev), stphase2(iev)
+          write(11,*) wvaz2, startamp2(iev), stphase2(iev)
         enddo
 
         !   write parameter covariance matrix for isotropic velocity parameters
@@ -2429,9 +2480,12 @@
         return
         end
 
+
+!=========================================================
+!  uses grid search to find estimates of best fitting wave 
+!  parameters for each event, with fixed velocity structure
+!=========================================================
       subroutine search(pb)
-!  uses grid search to find estimates of best fitting wave parameters for each event,
-!  with fixed velocity structure
       parameter (maxnfreq=1, maxnsta=300, maxpts=20000, nparam = 4000, &
                   maxnobs = 25000, maxnodes = 2000, maxevnts = 400, &
                   maxnxints = 401, maxnyints = 401,ndeg = 81 )
@@ -2445,43 +2499,55 @@
       real*4 dtime(maxnsta), avslow(maxnsta)
       real*4 xbegkern,dxkern
       real*4 xbox(maxevnts,4),ybox(maxevnts,4)
-      real*4 wgtnode1(maxnsta,maxnodes,ndeg)
-      real*4 ampwgtnode1(maxnsta,maxnodes,ndeg)
+      real*8 ph2c_wgtnode(maxnsta,maxnodes,ndeg)
+      real*8 am2c_wgtnode(maxnsta,maxnodes,ndeg)
       real*4 dxnode,dynode
-      real*8 sensitivity(maxnxints,maxnyints)
-      real*8 ampsens(maxnxints,maxnyints)
+      real*8 ph2phsv_sens(maxnxints,maxnyints)
+      real*8 am2phsv_sens(maxnxints,maxnyints)
       real*4 damp1per(maxnsta), damp2per(maxnsta)
       real*4 dphase1(maxnsta),dphase2(maxnsta)
       real*4 phase1(maxnsta), phase2(maxnsta)
       real*4 ybegkern,dykern
       real*4 xnode(maxevnts,maxnodes),ynode(maxevnts,maxnodes)
       real*4 dtime1(maxnsta),dtime2(maxnsta),phcor(50)   
-      real*4 phase(maxnsta,ndeg),dphase(maxnsta,ndeg), &
-              dampper(maxnsta,ndeg)
+      real*4 phase(maxnsta,ndeg),dphase(maxnsta,ndeg)
+      real*4 dampper(maxnsta,ndeg)
       real*4 appvel(maxnodes),ampmult(maxnsta)
       real*4 xmin(maxevnts,ndeg), unifvel
       real*4 gamp(maxnsta,2)
       real*4 pb(6)
+
 !	  real*4 bmisfit
+      ! YYR 05/09/2018
+      real*8 ph2q_wgtnode(maxnsta,maxnodes,ndeg)
+      real*8 am2q_wgtnode(maxnsta,maxnodes,ndeg)
+      real*8 gamma_rayl(maxnodes)
         
       integer*4 nsta(maxevnts), iref(maxevnts)
       integer*4 istanum(maxevnts,maxnsta),istacor(maxnsta)
-      integer*4   istavar(maxnsta)
+      integer*4 istavar(maxnsta)
       integer*4 nxkern,nykern, nnodes
       integer*4 ityp1sta(maxnsta),ntyp1 
                                                                         
-      common /residua/ sensitivity,ampsens,d,rloc,azloc,freq, &
-        xsta,dtime,avslow,streal,stimag,stddevdata,phcor,  &
-        xbox,ybox,ysta,dxkern,dykern,dxnode,dynode, &
-        unifvel,appvel,ampmult,gamma, &
-        xnode, ynode,wgtnode1,ampwgtnode1,xmin, &
-        phase,dphase,dampper,istavar,istanum,nxkern,nykern, &
-        ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes, &
-        ph2qinv_sens, am2qinv_sens
+      common /residua/ ph2phsv_sens, am2phsv_sens, &
+                       ph2qinv_sens, am2qinv_sens, &
+                       ph2q_wgtnode, am2q_wgtnode, &
+                       ph2c_wgtnode, am2c_wgtnode, &
+                       gamma_rayl, gamma, d, rloc, &
+                       azloc, freq, xsta, dtime, avslow, &
+                       streal,stimag, stddevdata, phcor, &
+                       xbox, ybox, ysta, dxkern, dykern, &
+                       dxnode, dynode, unifvel, appvel,  &
+                       ampmult, xnode, ynode, xmin, phase, &
+                       dphase, dampper, istavar, istanum, &
+                       nxkern, nykern, ityp1sta, ntyp1, iref, &
+                       nsta, iev, naddat, ifreq, nnodes
+
 
       twopi = 3.1415928*2.
       onepi = 3.1415928
       convdeg = 3.1415928/180.
+
       azimlmn1 = -20.0*convdeg
       azimlmx1 = 20.01*convdeg
       azimint1 = 2.0*convdeg
@@ -2643,11 +2709,11 @@
       real*4 dtime(maxnsta), avslow(maxnsta)
       real*4 xbegkern,dxkern
       real*4 xbox(maxevnts,4),ybox(maxevnts,4)
-      real*4 wgtnode1(maxnsta,maxnodes,ndeg)
-      real*4 ampwgtnode1(maxnsta,maxnodes,ndeg)
+      real*8 ph2c_wgtnode(maxnsta,maxnodes,ndeg)
+      real*8 am2c_wgtnode(maxnsta,maxnodes,ndeg)
       real*4 dxnode,dynode
-      real*8 sensitivity(maxnxints,maxnyints)
-      real*8 ampsens(maxnxints,maxnyints)
+      real*8 ph2phsv_sens(maxnxints,maxnyints)
+      real*8 am2phsv_sens(maxnxints,maxnyints)
       real*4 damp1per(maxnsta), damp2per(maxnsta)
       real*4 dphase1(maxnsta),dphase2(maxnsta)
       real*4 phase1(maxnsta), phase2(maxnsta)
@@ -2674,15 +2740,27 @@
       integer*4 nxkern,nykern, nnodes
       integer*4 ityp1sta(maxnsta),ntyp1 
       integer*4 nevents
-                                                                  
-      common /residua/ sensitivity,ampsens,d,rloc,azloc,freq, &
-        xsta,dtime,avslow,streal,stimag,stddevdata,phcor,  &
-        xbox,ybox,ysta,dxkern,dykern,dxnode,dynode, &
-        unifvel,appvel,ampmult,gamma, &
-        xnode, ynode,wgtnode1,ampwgtnode1,xmin, &
-        phase,dphase,dampper,istavar,istanum,nxkern,nykern, &
-        ityp1sta,ntyp1,iref,nsta,iev,naddat,ifreq,nnodes, &
-        ph2qinv_sens, am2qinv_sens
+                
+      ! YYR 05/09/2018 
+      real*8 ph2q_wgtnode(maxnsta,maxnodes,ndeg)
+      real*8 am2q_wgtnode(maxnsta,maxnodes,ndeg)
+      real*8 gamma_rayl(maxnodes)
+
+
+      common /residua/ ph2phsv_sens, am2phsv_sens, &
+                       ph2qinv_sens, am2qinv_sens, &
+                       ph2q_wgtnode, am2q_wgtnode, &
+                       ph2c_wgtnode, am2c_wgtnode, &
+                       gamma_rayl, gamma, d, rloc, &
+                       azloc, freq, xsta, dtime, avslow, &
+                       streal,stimag, stddevdata, phcor, &
+                       xbox, ybox, ysta, dxkern, dykern, &
+                       dxnode, dynode, unifvel, appvel,  &
+                       ampmult, xnode, ynode, xmin, phase, &
+                       dphase, dampper, istavar, istanum, &
+                       nxkern, nykern, ityp1sta, ntyp1, iref, &
+                       nsta, iev, naddat, ifreq, nnodes
+
 
       common /msft/ bazi,cos2node,sin2node,crrntmod, &
           startamp1,startamp2,stphase1,stphase2,stazim1,stazim2, &
@@ -2693,7 +2771,7 @@
       convdeg = 3.1415928/180.
       actmisfit = 0.0
       do iev = 1, nevents
-        !   calculate the sensitivity kernel for fixed angles
+        !   calculate the ph2phsv_sens kernel for fixed angles
 
         do 125 idegg = 1,2
           if (idegg.eq.1) ideg = ideg1
@@ -2723,12 +2801,12 @@
             !write(14,*) iev,ideg,ii, appvel(ii)
           enddo
 
-          !  loop over stations, generating sensitivity kernels for each
+          !  loop over stations, generating ph2phsv_sens kernels for each
           do 102 ista = 1, nsta(iev)
 
             do ii = 1, nnodes
-              wgtnode1(ista,ii,ideg) = 0.0
-              ampwgtnode1(ista,ii,ideg) = 0.0
+              ph2c_wgtnode(ista,ii,ideg) = 0.0
+              am2c_wgtnode(ista,ii,ideg) = 0.0
             enddo
 
             xstatemp = xsta(iev,ista)*cs1z &
@@ -2776,18 +2854,18 @@
                   write(*,*) 'ixindex,iyindex,iev,ista,ideg',  &
                               ixindex,iyindex,iev,ista,ideg
              
-                  wgtnode1(ista,ii,ideg)    = 0.
-                  ampwgtnode1(ista,ii,ideg) = 0.  
+                  ph2c_wgtnode(ista,ii,ideg) = 0.
+                  am2c_wgtnode(ista,ii,ideg) = 0.  
 
                 else
 
-                  wgtnode1(ista,ii,ideg) =    sensitivity(ixindex,iyindex)
-                  ampwgtnode1(ista,ii,ideg) =     ampsens(ixindex,iyindex)
+                  ph2c_wgtnode(ista,ii,ideg) = ph2phsv_sens(ixindex,iyindex)
+                  am2c_wgtnode(ista,ii,ideg) = am2phsv_sens(ixindex,iyindex)
                 endif
 
               else 
-                wgtnode1(ista,ii,ideg)    = 0.
-                ampwgtnode1(ista,ii,ideg) = 0.  
+                ph2c_wgtnode(ista,ii,ideg) = 0.
+                am2c_wgtnode(ista,ii,ideg) = 0.  
               endif         
             enddo
 
@@ -2798,10 +2876,10 @@
             !  changes in version 587 old version commented out
             do inode = 1, nnodes
               !dphase(ista,ideg) = dphase(ista,ideg) & 
-              !        + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
+              !        + (1.0/twopi)*ph2c_wgtnode(ista,inode,ideg) &
               !        *(appvel(inode)-unifvel)/unifvel
               dphase(ista,ideg) = dphase(ista,ideg)  &
-                      + (1.0/twopi)*wgtnode1(ista,inode,ideg) &
+                      + (1.0/twopi)*ph2c_wgtnode(ista,inode,ideg) &
                       *(appvel(inode)-unifvel)/appvel(inode) &
                       /(appvel(inode)/unifvel)
 
@@ -2810,7 +2888,7 @@
 
             do inode =1, nnodes
               dampper(ista,ideg) = dampper(ista,ideg)  &
-                       + ampwgtnode1(ista,inode,ideg)  &
+                       + am2c_wgtnode(ista,inode,ideg)  &
                 !      (appvel(inode)-unifvel)/unifvel &
                        *(appvel(inode)-unifvel)/appvel(inode) &
                        /(appvel(inode)/unifvel)
@@ -3009,79 +3087,99 @@
        
 
        
-      subroutine assignstrt(startvel,nodevel,preunifvel,ntot, &
-                                  nxpt,dxnode,dynode)
+      subroutine assignstrt(startvel,nodevel,preunifvel,ntot,nxpt,dxnode,dynode)
+
+      !  assigns start values for node parameters based on a priori predictions of
+      !  starting model, previously generated.  Important that a priori grid extend
+      !  at least as far as model grid and that it is nearly as closely or more closely
+      !  spaced than model grid. Uses linear weighting between nodes to generate 
+      !  average value for starting values.  A priori grid does not have same spacing 
+      !  and is assumed to be regularly spaced on Mercator projection, increasing in 
+      !  both lon and lat
+
       parameter (maxnodes = 2000, maxstart = 200)
+      
       character*70 startvel
       real*4 boxlat(4), boxlon(4)
       real*4 nodelat(maxnodes),nodelon(maxnodes),nodevel(maxnodes)
       real*4 latmin,latmax,lonmin,lonmax
       real*4 prdlon(maxstart),prdlat(maxstart),prdv(maxstart,maxstart)
+
       common /gengrid/ nodelat,nodelon,boxlat,boxlon
+      
       common /updatest/ prdlon,prdlat,prdv,dylat,dxlon, &
            beglat,endlat,dlat,beglon,endlon,dlon,nlat,nlon
      
       pi = 3.1415928
       convdeg = 3.1415928/180.
-
       deg2km = 111.194
+
       open(60, file = startvel)
-!  assigns start values for node parameters based on a priori predictions of
-!  starting model, previously generated.  Important that a priori grid extend
-!  at least as far as model grid and that it is nearly as closely or more closely
-!  spaced than model grid. Uses linear weighting between nodes to generate average value for
-!  starting values.  A priori grid does not have same spacing and is assumed to 
-!  be regularly spaced on Mercator projection, increasing in both lon and lat
-!  
       read(60,*) beglat,endlat,dlat,beglon,endlon,dlon
       read(60,*) preunifvel
-      nlat = (endlat-beglat)/dlat +1.01
+
+      nlat = (endlat-beglat)/dlat + 1.01
       nlon = (endlon-beglon)/dlon + 1.01
-!  file of phase velocity predictions are assumed to run through longitudes first,
-!  before incrementing in latitude
+
+      !  file of phase velocity predictions are assumed to run through longitudes first,
+      !  before incrementing in latitude
       do ilat = 1, nlat
         do ilon = 1, nlon
-	  read(60,*) prdlon(ilon),prdlat(ilat),prdv(ilon,ilat)
-	enddo
+          read(60,*) prdlon(ilon),prdlat(ilat),prdv(ilon,ilat)
+        enddo
       enddo
-!  convert spacing of model back to degrees
+
+      !  convert spacing of model back to degrees
       dylat = dynode/deg2km
       dxlon = dxnode/deg2km
+
       do i = 1, ntot
         sclfac = cos(convdeg*nodelat(i))
-	dxxlon = dxlon/sclfac
+        dxxlon = dxlon/sclfac
+
         latmin = nodelat(i) - dylat
-	latmax = nodelat(i) + dylat
-	lonmin = nodelon(i) - dxxlon
-	lonmax = nodelon(i) + dxxlon
-	minlat = (latmin - beglat)/dlat +1
-	if (minlat.lt.1) minlat = 1
-	maxlat = (latmax-beglat)/dlat +1
-	if (maxlat.gt.nlat) maxlat = nlat
-	minlon = (lonmin-beglon)/dlon +1
-	if (minlon.lt.1) minlon = 1
-	maxlon = (lonmax-beglon)/dlon + 1
-	if (maxlon.gt.nlon) maxlon = nlon
-	wgtsum = 0.0
-	sumvel = 0.0
-	if ((minlat.gt.nlat).or.(maxlat.lt.1).or. &
-                    (minlon.gt.nlon).or.(maxlon.lt.1)) then
+        latmax = nodelat(i) + dylat
+        lonmin = nodelon(i) - dxxlon
+        lonmax = nodelon(i) + dxxlon
+        
+        minlat = (latmin - beglat)/dlat +1
+        if (minlat.lt.1) minlat = 1
+        
+        maxlat = (latmax-beglat)/dlat +1
+        if (maxlat.gt.nlat) maxlat = nlat
+        
+        minlon = (lonmin-beglon)/dlon +1
+        if (minlon.lt.1) minlon = 1
+        
+        maxlon = (lonmax-beglon)/dlon + 1
+        if (maxlon.gt.nlon) maxlon = nlon
+        
+        wgtsum = 0.0
+        sumvel = 0.0
+        
+        if ((minlat.gt.nlat).or.(maxlat.lt.1).or. &
+            (minlon.gt.nlon).or.(maxlon.lt.1)) then
            write (*,*)  &
           'PROBLEM. Node outside region of starting predictions '
-	   write (*,*) i, nodelat(i),nodelon(i)
-	endif
-	do ii = minlon,maxlon
-	  do jj = minlat,maxlat
-	    wgt = (1.-abs(nodelat(i)-prdlat(jj))/dylat) &
-                    *(1.-abs(nodelon(i)-prdlon(ii))/dxxlon)
+           write (*,*) i, nodelat(i),nodelon(i)
+        endif
+
+        do ii = minlon,maxlon
+          do jj = minlat,maxlat
+            wgt = (1.-abs(nodelat(i)-prdlat(jj))/dylat) &
+                 *(1.-abs(nodelon(i)-prdlon(ii))/dxxlon)
+
             sumvel = sumvel + wgt*prdv(ii,jj)
-	    wgtsum = wgtsum + wgt
-	  enddo
-	enddo
-	nodevel(i) = sumvel/wgtsum
-!	write(*,*) i, nodevel(i),nodelat(i),nodelon(i)
-!	write(*,*) minlat,maxlat,minlon,maxlon
+            wgtsum = wgtsum + wgt
+
+          enddo
+        enddo
+
+        nodevel(i) = sumvel/wgtsum
+        !write(*,*) i, nodevel(i),nodelat(i),nodelon(i)
+        !write(*,*) minlat,maxlat,minlon,maxlon
       enddo
+
       return
       end
  
