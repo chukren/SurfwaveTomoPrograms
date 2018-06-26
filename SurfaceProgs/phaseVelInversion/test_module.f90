@@ -125,8 +125,8 @@
         integer :: iref(maxevnts)
         integer :: nsta(maxevnts)
         integer :: iev, naddat, ifreq, nnodes
-
     end module
+
 
     module gengrid
       use residua, only: maxnodes
@@ -135,6 +135,7 @@
       real :: nodelat(maxnodes),nodelon(maxnodes)
       real :: boxlat(4), boxlon(4) 
     end module 
+
 
     module updatest
       implicit none
@@ -149,6 +150,7 @@
       integer :: nlat, nlon
     end module
 
+
     module update2
       use residua, only: maxnodes
       implicit none
@@ -159,6 +161,7 @@
       real :: gamma_covar(maxnodes,maxnodes)
       real :: gamma_change(maxnodes)
     end module 
+
 
     program srchwave589_isores_nophase
       use residua
@@ -286,7 +289,7 @@
 
       freq_ref = 0.02 ! Hz 
 
-      dampgamma = 2.E-04
+      dampgamma = 5.E-05
       gamma = 2.0E-04
   
 
@@ -555,8 +558,8 @@
             ph2phsv = (-2.)* kk**2. * sin(kern_phi) / kern_denom
             am2phsv = (-2.)* kk**2. * cos(kern_phi) / kern_denom
 
-            ph2phsv = ph2phsv * amplitude(ifreqkern) * 1000. 
-            am2phsv = am2phsv * amplitude(ifreqkern) * 1000.
+            ph2phsv = ph2phsv * amplitude(ifreqkern) 
+            am2phsv = am2phsv * amplitude(ifreqkern)
 
             phsens(ixkern,iykern) = phsens(ixkern,iykern) + &
                       ph2phsv * ((dxkern*dykern)/radius**2) 
@@ -638,14 +641,15 @@
                                 ph2qinv_sens(ixkern,iykern), &
                                 am2qinv_sens(ixkern,iykern)
 
-            !if(debug) write(*,999) xk,yk,ph2phsv_sens(ixkern,iykern), &
-            !                      am2phsv_sens(ixkern,iykern), &
-            !                      ph2qinv_sens(ixkern,iykern), &
-            !                      am2qinv_sens(ixkern,iykern)
 
         enddo
       enddo
 
+      ! spot check kernels 
+      !if(debug) write(*,999) xk,yk,ph2phsv_sens(100,100), &
+      !                             am2phsv_sens(100,100), &
+      !                             ph2qinv_sens(100,100), &
+      !                             am2qinv_sens(100,100)
 999   format(f12.3,f12.3,4(e16.4))
 
       !if(debug) stop
@@ -669,7 +673,8 @@
 
       write(*,*) 'bp 5a'
       write(*,*) startvel
-      
+     
+      ! TODO: need to check nodevel, sightly differ from f77 code
       call assignstrt(startvel,nodevel,preunifvel,nnodes,ncol,dxnode,dynode)
       
       write(*,*) 'bp 5b'
@@ -688,6 +693,7 @@
 
         unifvel = preunifvel
         nodevel(i) = nodevel(i) + unifvel - preunifvel
+
         !if(debug) write(14,*) nodelat(i),nodelon(i),nodevel(i)
 
         ! Starting model of gamma (attenuation coefficent)
@@ -809,6 +815,9 @@
           crrntmod(ip) = origmod(ip)
         enddo
 
+        !if(debug) write(*,*) " debug vel(100), covinv", & 
+        !                     crrntmod(i6+100), covinv(i6+100)
+
         !  initialize gamma factor for attenuation
         !  --YYR 05/06/18 
         do ii = 1, nnodes
@@ -818,7 +827,8 @@
           crrntmod(ip) = origmod(ip)
         enddo 
 
-        !if(debug) print *, "crrntmod(120)", (120+i6+nnodes), crrntmod(120+i6+nnodes)
+        !if(debug) print *, " debug gamma(100) sigma", &
+        !                  crrntmod(100+i6+nnodes), covinv(100+i6+nnodes)
 
         !  anisotropy varies in different areas        
         do i =1, iarea
@@ -867,7 +877,8 @@
         !  increase the variance for edges for velocity 
         !  YYR 05/06/18  itp = 2 for attenuation
         varfac2 = 1.
-        do itp = 1,2
+        ! YYR switch to vel only from 2 to 1
+        do itp = 1,1
           ityp = nnodes*(itp-1)
           
           !  right end 
@@ -1043,6 +1054,8 @@
 
         enddo ! end iev
 
+        !if(debug) write(*,*) "streal(10,2,1) stimag(10,2,1)", &
+        !                      streal(10,2,1), stimag(10,2,1)
 
         print *, "bp 2"
         !  construct form of a priori smooothness criterion matrix for velocity 
@@ -1076,7 +1089,7 @@
           enddo
         enddo
         
-        if(debug) print *,"smoothing: ismth, jsmth, b(ismth,jsmth)"
+        !if(debug) print *,"smoothing: ismth, jsmth, b(ismth,jsmth)"
         do ismth = 1, nnodes
           do jsmth = 1, nnodes
             write(14,*) ismth,jsmth,b(ismth,jsmth)
@@ -1304,7 +1317,9 @@
           !=== end loop over stations ===
 
  125    enddo ! ideg
-        !if(debug) write(*,*) "iev, dph, dam:", iev, dphase(5,5), dampper(5,5)
+        !if(debug .and. iev==5 ) then 
+        !  write(*,*) "iev=5, dph(5,5), dam(5,5):", iev, dphase(5,5), dampper(5,5)
+        !endif
 
         !===  end loop over angles for one event ===
 
@@ -1313,7 +1328,7 @@
         
         call search(pb)
 
-        !if(debug) then
+        !if(debug .and. iev==5) then
         !  write(*,*)iev,pb(3)/convdeg,pb(4)/convdeg,pb(1),pb(2),pb(5),pb(6)
         !endif
 
@@ -1546,11 +1561,9 @@
           sinph2 = sin(prefase2*twopi)
           
           
-          prereal = staamp1*cosph1 + staamp2*cosph2
-          !if(debug) write(*,*) "staamp2, cosph2", staamp2, cosph2
-          !if(debug) write(*,*) "prereal", prereal  
-
+          prereal =       staamp1*cosph1 + staamp2*cosph2
           preimag = -1.0*(staamp1*sinph1 + staamp2*sinph2)
+
           !if(debug) write(*,*) "ampmult", ampmult(istavar(istanum(iev,ista)))
           
 
@@ -1559,16 +1572,14 @@
           !  to each station is no longer necessary
           !    YYR 05/11/2018
           
-          !prereal = prereal * ampmult(istavar(istanum(iev,ista))) &
-          !          * exp(-unifgamma*xsta(iev,ista))
-
-          prereal = prereal * ampmult(istavar(istanum(iev,ista)))
+          prereal = prereal * ampmult(istavar(istanum(iev,ista))) &
+                    * exp(-unifgamma*xsta(iev,ista))
+          !prereal = prereal * ampmult(istavar(istanum(iev,ista)))
           !if(debug) write(*,*) "prereal", prereal
 
-          !preimag = preimag * ampmult(istavar(istanum(iev,ista))) &
-          !          * exp(-unifgamma*xsta(iev,ista))
-
-          preimag = preimag * ampmult(istavar(istanum(iev,ista)))
+          preimag = preimag * ampmult(istavar(istanum(iev,ista))) &
+                    * exp(-unifgamma*xsta(iev,ista))
+          !preimag = preimag * ampmult(istavar(istanum(iev,ista)))
 
           !  data vector and partial derivatives listed event by event with all
           !  real data for first event followed by imaginary data, then onto next event
@@ -1621,11 +1632,11 @@
                      - (1.0/twopi)*ph2c_wgtnode(iref(iev),ii,ideg2)/unifvel
 
             ! YYR 05/10
-            parph1q =  (1.0/twopi)*ph2q_wgtnode(ista,ii,ideg1)/unifvel &
-                     - (1.0/twopi)*ph2q_wgtnode(iref(iev),ii,ideg1)/unifvel
+            parph1q =  (1.0/twopi)*ph2q_wgtnode(ista,ii,ideg1)/unifgamma &
+                     - (1.0/twopi)*ph2q_wgtnode(iref(iev),ii,ideg1)/unifgamma
 
-            parph2q =  (1.0/twopi)*ph2q_wgtnode(ista,ii,ideg2)/unifvel &
-                     - (1.0/twopi)*ph2q_wgtnode(iref(iev),ii,ideg2)/unifvel
+            parph2q =  (1.0/twopi)*ph2q_wgtnode(ista,ii,ideg2)/unifgamma &
+                     - (1.0/twopi)*ph2q_wgtnode(iref(iev),ii,ideg2)/unifgamma
 
 
             parph1cs =  (1.0/twopi)*cos2node(ii,ideg1)*ph2c_wgtnode(ista,ii,ideg1)/unifvel &
@@ -1646,8 +1657,8 @@
             paramp2v = startamp2(iev)*am2c_wgtnode(ista,ii,ideg2)/unifvel
 
             ! YYR 05/10
-            paramp1q = startamp1(iev)*am2q_wgtnode(ista,ii,ideg1)/unifvel
-            paramp2q = startamp2(iev)*am2q_wgtnode(ista,ii,ideg2)/unifvel
+            paramp1q = startamp1(iev)*am2q_wgtnode(ista,ii,ideg1)/unifgamma
+            paramp2q = startamp2(iev)*am2q_wgtnode(ista,ii,ideg2)/unifgamma
 
             paramp1cs  = startamp1(iev)*cos2node(ii,ideg1)*am2c_wgtnode(ista,ii,ideg1)/unifvel
             paramp2cs  = startamp2(iev)*cos2node(ii,ideg2)*am2c_wgtnode(ista,ii,ideg2)/unifvel
@@ -1870,13 +1881,13 @@
         enddo
       enddo
       
-      print *, "sumsmgg, sumsmth2",sumsmgg,sumsmth2 
+      !print *, "sumsmgg, sumsmth2",sumsmgg,sumsmth2 
       smthco0 = -sumsmgg/sumsmth2
       write(*,*) 'smthco0', smthco0
       
       do ismth = 1,nnodes
         do jsmth = 1,nnodes
-          gtg(ismth+i6,jsmth+i6) = gtg(ismth+i6pnod,jsmth+i6pnod) &
+          gtg(ismth+i6pnod,jsmth+i6pnod) = gtg(ismth+i6pnod,jsmth+i6pnod) &
                                  + btb(ismth,jsmth)*smthco0
         enddo
       enddo
@@ -1885,7 +1896,7 @@
       !  solution
       do ismth = 1,nnodes
         do jsmth = 1, nnodes
-          gtdcmm(ismth+i6) = gtdcmm(ismth+i6pnod) &
+          gtdcmm(ismth+i6pnod) = gtdcmm(ismth+i6pnod) &
                            - smthco0*btb(ismth,jsmth) &
                            * (crrntmod(jsmth+i6pnod) - origmod(jsmth+i6pnod))
         enddo
@@ -2192,6 +2203,10 @@
       !  update node coefficients and calculate average isotropic velocity
       avgvel = 0.0
       
+      !if(debug) then
+      !  print *,"120, veloc, dveloc", (120+i6), crrntmod(120+i6), change(120+i6)
+      !endif
+
       do ii = 1, nnodes
         crrntmod(ii+i6) = crrntmod(ii+i6) + change(ii+i6)
         avgvel = avgvel + crrntmod(ii+i6)
@@ -2203,7 +2218,11 @@
       !  update node coefficients and calculate average attenuation coefficient
       avggamma = 0.0
       
-      print *,"120, gamma, dgamma", (120+i6+nnodes), crrntmod(120+i6+nnodes), change(120+i6+nnodes)
+      !if (debug) then
+      !  print *,"120, gamma, dgamma", (120+i6+nnodes), &
+      !         crrntmod(120+i6+nnodes), change(120+i6+nnodes)
+      !endif
+
       do ii = 1, nnodes
         crrntmod(ii+i6+nnodes) = crrntmod(ii+i6+nnodes) + change(ii+i6+nnodes)
         avggamma = avggamma + crrntmod(ii+i6+nnodes)
@@ -2408,7 +2427,7 @@
         naddat = naddat + 2*nsta(iev)
       enddo
 
-      if(debug) print *,"sum for each event"
+      !if(debug) print *,"sum for each event"
       !  rmsph multiplied by 2 because only half the number of observations
 
       rmsph = sqrt(2.*totsumsqph/nobs)
@@ -2475,7 +2494,7 @@
         sortrms(iev) = rmsphase(iev)
       enddo
 
-      if(debug) print *, "call shell()"
+      !if(debug) print *, "call shell()"
 
       call shell(nevents, sortrms)
 
@@ -2548,10 +2567,10 @@
                     nodelon(ii),nodelat(ii)
 
         vchange(ii) = crrntmod(ii+i6) - nodevel(ii)
-        gamma_change = crrntmod(ii+i6+nnodes) - nodegamma(ii)
-        !write(30,*) ii,nodelon(ii),nodelat(ii), & 
-        !           crrntmod(ii+i6),stddev(ii+i6),vchange(ii)
-	if(debug) print *,ii,nodelon(ii),nodelat(ii),crrntmod(ii+i6)
+        gamma_change(ii) = crrntmod(ii+i6+nnodes) - nodegamma(ii)
+
+        !write(30,*) ii,nodelon(ii),nodelat(ii),crrntmod(ii+i6),stddev(ii+i6),vchange(ii)
+        if(debug) print *,ii,nodelon(ii),nodelat(ii),crrntmod(ii+i6),crrntmod(ii+i6+nnodes)
       enddo
 
       write(30,*) nnodes
@@ -2603,12 +2622,14 @@
       !  change predicted phase velocities from a priori model to 
       !  new results on same grid as a priori model
     
-      if(debug) print *,"call updateapri()"
+      if(debug) print *,"call updateapri(), unifvel", unifvel
 
       call updateapri(fendvel,unifvel,preunifvel,dampvel,nnodes)
       
-      if(debug) print *,"call updateapri_gamma()"
-      call updateapri_gamma(fendgamma,unifgamma,dampgamma,nnodes)
+      if(debug) print *,"call updateapri_gamma(), unifgamma", unifgamma
+
+      call updateapri_gamma(fendgamma,dampgamma,nnodes)
+
       enddo
       !===  end loop over frequencies, which is silly since nfreq should always = 1
 
@@ -3243,15 +3264,13 @@
           sinph1 = sin(prefase1*twopi)
           sinph2 = sin(prefase2*twopi)
           
-          prereal = staamp1*cosph1+staamp2*cosph2
-!           write(*,*) prereal  
-          preimag = -1.0*(staamp1*sinph1+ staamp2*sinph2)
-!          write(*,*) ampmult(istavar(istanum(iev,ista)))
+          prereal =       staamp1*cosph1 + staamp2*cosph2
+          preimag = -1.0*(staamp1*sinph1 + staamp2*sinph2)
           prereal = prereal*ampmult(istavar(istanum(iev,ista))) &
-                    *exp(-gamma*xsta(iev,ista))
+                    *exp(-unifgamma*xsta(iev,ista))
 !          write(*,*) prereal
           preimag = preimag*ampmult(istavar(istanum(iev,ista))) &
-                    *exp(-gamma*xsta(iev,ista))
+                    *exp(-unifgamma*xsta(iev,ista))
 
 
 
@@ -3472,7 +3491,6 @@
       use updatest
       use update2, only: covar, vchange
 
-      !real*4 nodevel(maxnodes)
       real*4 wgt(maxnodes)
       real*4 latmin,latmax,lonmin,lonmax
       real*4 newvel(maxstart,maxstart),stddevap(maxstart,maxstart)
@@ -3489,6 +3507,7 @@
       write(70, *) beglat,endlat,dlat,beglon,endlon,dlon
       
       sumall = 0.0
+      write(*,*) "debug unifvel=",unifvel
 
       do jj = 1,nlat
         !  to correct for points on mercator grid being closer together 
@@ -3568,16 +3587,20 @@
     !  for every point
     !==============================================================
 
-    subroutine updateapri_gamma(fendgamma,unifgamma,dampgamma,nnodes)
-      use residua, only: maxnodes
+    subroutine updateapri_gamma(fendgamma,dampgamma,nnodes)
+      use residua, only: maxnodes, unifgamma
       use gengrid
       use updatest
       use update2, only: gamma_covar, gamma_change
 
-      real*4 wgt(maxnodes)
-      real*4 latmin,latmax,lonmin,lonmax
-      real*4 newgamma(maxstart,maxstart),stddevap(maxstart,maxstart)
-      integer iwgt(maxnodes)
+      real :: wgt(maxnodes)
+      real :: latmin,latmax,lonmin,lonmax
+      real :: newgamma(maxstart,maxstart),stddevap(maxstart,maxstart)
+      integer :: iwgt(maxnodes)
+
+      real*8 :: dampgamma
+      real :: pi, convdeg, sumall 
+      real :: gammasum, wgtsum, sumstdev 
 
       character(len=70) :: fendgamma
 
@@ -3588,6 +3611,7 @@
       write(70, *) beglat,endlat,dlat,beglon,endlon,dlon
       
       sumall = 0.0
+      write(*,*) "debug updateapri_gamma() unifgamma",unifgamma
 
       do jj = 1,nlat
         !  to correct for points on mercator grid being closer together 
@@ -3614,6 +3638,9 @@
               sumstdev = sumstdev + wgt(kk)*sqrt(gamma_covar(kk,kk))
             endif
           enddo
+
+
+          if (ii==100 .and. jj==100) write(*,*) "debug, wgtsum, gammasum", wgtsum, gammasum
 
           if (nwgt.gt.0) then
             newgamma(ii,jj) = unifgamma + gammasum/wgtsum
